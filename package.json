@@ -1,0 +1,34 @@
+{
+  "name": "servey",
+  "version": "1.0.0",
+  "description": "Servey | Single Page Application & Static Server",
+  "main": "index.js",
+  "bin": {
+    "servey": "bin/index.js"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexanderElias/servey.git"
+  },
+  "keywords": [
+	  "static",
+	  "single",
+	  "page",
+	  "application",
+	  "http",
+	  "server",
+	  "dev"
+],
+  "author": "Alexander Elias",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/AlexanderElias/servey/issues"
+  },
+  "homepage": "https://github.com/AlexanderElias/servey#readme"
+}
