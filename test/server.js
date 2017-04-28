@@ -7,6 +7,14 @@ var options = {
 
 var server = Servey(options);
 
-server.listen(function () {
-	console.log('ready');
+server.open(function () {
+	console.log('open');
 });
+
+server.request(function (req) {
+	console.log(req.url);
+});
+
+// server.close(function () {
+// 	console.log('close');
+// });

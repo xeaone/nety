@@ -1,4 +1,5 @@
 const Status = require('./lib/status');
+const Events = require('events');
 const Http = require('http');
 const Util = require('util');
 const Path = require('path');
@@ -9,18 +10,9 @@ const PORT = 8080;
 const DIRECTORY = '.';
 const HOSTNAME = 'localhost';
 
-function Server (options) {
-	options = options || {};
-
-	this.port = options.port || PORT;
-	this.hostname = options.hostname || HOSTNAME;
-	this.spa = options.spa === null || options.spa === undefined ? false : options.spa;
-
-	this.directory = Path.join(
-		Path.dirname(process.argv[1]),
-		options.directory ? Path.normalize(options.directory) : DIRECTORY
-	);
-}
+function Server () { Events.EventEmitter.call(this); }
+Server.prototype = Object.create(Events.EventEmitter.prototype);
+Server.prototype.constructor = Server;
 
 Server.prototype.hasExtension = function (path) {
 	return Path.extname(path) !== '';
@@ -36,9 +28,9 @@ Server.prototype.parsePath = function (path) {
 };
 
 Server.prototype.responsePath = function (path, callback) {
-	var self = this, hasExtension;
+	const self = this;
 
-	hasExtension = self.hasExtension(path);
+	var hasExtension = self.hasExtension(path);
 	path = self.parsePath(path);
 
 	Fs.stat(path, function (error, stat) {
@@ -56,46 +48,85 @@ Server.prototype.responsePath = function (path, callback) {
 	});
 };
 
-Server.prototype.handler = function (req, res) {
-	var self = this, status, stream;
-
-	self.responsePath(req.url, function (error, path) {
-		if (error) {
-			status = Status(error.code);
-			res.writeHead(status.code, status.message);
-			return res.end(JSON.stringify(status))
-		};
-
-		stream = Fs.createReadStream(path).on('error', function () {
-			status = Status(404);
-			res.writeHead(status.code, status.message);
-			return res.end(JSON.stringify(status))
-		});
-
-		status = Status(200);
-		res.writeHead(status.code, status.message);
-		stream.pipe(res);
-	});
-};
-
-Server.prototype.listener = function (callback) {
-	var self = this;
-	console.log(`Servey listening on ${self.hostname}:${self.port}`);
-	if (callback) return callback.call(self, self.server);
-};
-
-Server.prototype.listen = function (callback) {
-	var self = this;
-
-	self.server = Http.createServer(function (req, res) {
-		self.handler(req, res);
-	});
+Server.prototype.open = function (callback) {
+	const self = this;
 
 	self.server.listen(self.port, self.hostname, function () {
-		self.listener(callback);
+		console.log(`Servey listening on ${self.hostname}:${self.port}`);
+		self.emit('open');
+		if (callback) callback();
 	});
+};
+
+Server.prototype.close = function (callback) {
+	const self = this;
+
+	self.on('open', function () {
+		self.server.close(function () {
+			self.emit('close');
+			if (callback) callback();
+		});
+	});
+};
+
+Server.prototype.request = function (callback) {
+	const self = this;
+
+	self.on('request', function (request, response) {
+		if (callback) callback(request, response);
+	});
+};
+
+Server.prototype.create = function (options) {
+	const self = this;
+
+	options = options || {};
+	self.port = options.port || PORT;
+	self.hostname = options.hostname || HOSTNAME;
+	self.spa = options.spa === null || options.spa === undefined ? false : options.spa;
+
+	self.directory = Path.join(
+		Path.dirname(process.argv[1]),
+		options.directory ? Path.normalize(options.directory) : DIRECTORY
+	);
+
+	self.status, self.stream;
+
+	self.server = Http.createServer(function (request, response) {
+		self.responsePath(request.url, function (error, path) {
+			if (error) {
+				self.status = Status(error.code);
+				response.writeHead(self.status.code, self.status.message);
+				response.end(self.status.string());
+				self.emit('request', request, response, self.status);
+			} else {
+				self.stream = Fs.createReadStream(path);
+
+				self.stream.on('error', function () {
+					self.status = Status(404);
+					response.writeHead(self.status.code, self.status.message);
+					response.end(self.status.string());
+					self.emit('request', request, response, self.status);
+				});
+
+				self.stream.on('open', function () {
+					self.status = Status(200);
+					response.writeHead(self.status.code, self.status.message);
+				});
+
+				self.stream.on('close', function () {
+					response.end();
+					self.emit('request', request, response, self.status);
+				});
+
+				self.stream.pipe(response);
+			}
+		});
+	});
+
+	return self;
 };
 
 module.exports = function(options) {
-	return new Server(options);
+	return new Server().create(options);
 };
