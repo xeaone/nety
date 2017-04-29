@@ -52,7 +52,6 @@ Server.prototype.open = function (callback) {
 	const self = this;
 
 	self.server.listen(self.port, self.hostname, function () {
-		console.log(`Servey listening on ${self.hostname}:${self.port}`);
 		self.emit('open');
 		if (callback) callback();
 	});
@@ -84,11 +83,14 @@ Server.prototype.create = function (options) {
 	self.port = options.port || PORT;
 	self.hostname = options.hostname || HOSTNAME;
 	self.spa = options.spa === null || options.spa === undefined ? false : options.spa;
+	self.directory = options.directory ? Path.normalize(options.directory) : DIRECTORY;
 
-	self.directory = Path.join(
-		Path.dirname(process.argv[1]),
-		options.directory ? Path.normalize(options.directory) : DIRECTORY
-	);
+	if (!Path.isAbsolute(self.directory)) {
+		self.directory = Path.join(
+			Path.dirname(process.argv[1]),
+			self.directory
+		);
+	}
 
 	self.status, self.stream;
 

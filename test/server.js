@@ -2,7 +2,7 @@ const Servey = require('../index');
 
 var options = {
 	spa: true,
-	directory: 'static'
+	directory: __dirname + '/static'
 };
 
 var server = Servey(options);
