@@ -1,4 +1,4 @@
-const Status = require('./lib/status');
+const Headers = require('./lib/headers');
 const Events = require('events');
 const Http = require('http');
 const Util = require('util');
@@ -11,6 +11,7 @@ const DIRECTORY = '.';
 const HOSTNAME = 'localhost';
 
 function Server () { Events.EventEmitter.call(this); }
+
 Server.prototype = Object.create(Events.EventEmitter.prototype);
 Server.prototype.constructor = Server;
 
@@ -68,19 +69,12 @@ Server.prototype.close = function (callback) {
 	});
 };
 
-Server.prototype.request = function (callback) {
-	const self = this;
-
-	self.on('request', function (request, response) {
-		if (callback) callback(request, response);
-	});
-};
-
 Server.prototype.create = function (options) {
 	const self = this;
 
 	options = options || {};
 	self.port = options.port || PORT;
+	self.cors = options.cors || false;
 	self.hostname = options.hostname || HOSTNAME;
 	self.spa = options.spa === null || options.spa === undefined ? false : options.spa;
 	self.directory = options.directory ? Path.normalize(options.directory) : DIRECTORY;
@@ -92,38 +86,69 @@ Server.prototype.create = function (options) {
 		);
 	}
 
-	self.status, self.stream;
-
 	self.server = Http.createServer(function (request, response) {
+		response.setHeaders
+
 		self.responsePath(request.url, function (error, path) {
+			var header, stream;
+
 			if (error) {
-				self.status = Status(error.code);
-				response.writeHead(self.status.code, self.status.message);
-				response.end(self.status.string());
-				self.emit('request', request, response, self.status);
+				header = Headers(error.code, self.cors);
+				response.writeHead(header.code, header);
+				response.end(JSON.stringify(header));
 			} else {
-				self.stream = Fs.createReadStream(path);
+				stream = Fs.createReadStream(path);
 
-				self.stream.on('error', function () {
-					self.status = Status(404);
-					response.writeHead(self.status.code, self.status.message);
-					response.end(self.status.string());
-					self.emit('request', request, response, self.status);
+				stream.on('error', function () {
+					header = Headers(404, self.cors);
+					response.writeHead(header.code, header);
+					response.end(JSON.stringify(header));
 				});
 
-				self.stream.on('open', function () {
-					self.status = Status(200);
-					response.writeHead(self.status.code, self.status.message);
+				stream.on('open', function () {
+					header = Headers(200, self.cors);
+					response.writeHead(header.code, header);
 				});
 
-				self.stream.on('close', function () {
+				stream.on('close', function () {
 					response.end();
-					self.emit('request', request, response, self.status);
 				});
 
-				self.stream.pipe(response);
+				stream.pipe(response);
 			}
 		});
+	});
+
+	self.server.on('checkContinue', function (request, response) {
+		self.emit('checkContinue', request, response);
+	});
+
+	self.server.on('checkExpectation', function (request, response) {
+		self.emit('checkExpectation', request, response);
+	});
+
+	self.server.on('clientError', function (exception, socket) {
+		self.emit('clientError', exception, socket);
+	});
+
+	self.server.on('close', function () {
+		self.emit('close');
+	});
+
+	self.server.on('connect', function (request, socket, head) {
+		self.emit('connect', request, socket, head);
+	});
+
+	self.server.on('connection', function (socket) {
+		self.emit('connection', socket);
+	});
+
+	self.server.on('request', function (request, response) {
+		self.emit('request', request, response);
+	});
+
+	self.server.on('upgrade', function (request, socket, head) {
+		self.emit('upgrade', request, socket, head);
 	});
 
 	return self;

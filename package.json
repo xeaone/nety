@@ -1,6 +1,6 @@
 {
   "name": "servey",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Servey | Single Page Application & Static Server",
   "main": "index.js",
   "bin": {
@@ -10,7 +10,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": ""
+    "test": "node test/server"
   },
   "repository": {
     "type": "git",

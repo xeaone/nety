@@ -2,6 +2,7 @@ const Servey = require('../index');
 
 var options = {
 	spa: true,
+	cors: true,
 	directory: __dirname + '/static'
 };
 
@@ -11,7 +12,7 @@ server.open(function () {
 	console.log('open');
 });
 
-server.request(function (req) {
+server.on('request', function (req) {
 	console.log(req.url);
 });
 

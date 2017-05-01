@@ -20,6 +20,7 @@ Returns a server instance.
 - `Number: port` port to use.
 - `String: hostname` hostname to use.
 - `Boolean: spa` spa mode defaults to false.
+- `Boolean: cors` cors mode defaults to false.
 - `String: directory` path to static directory.
 
 
