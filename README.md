@@ -21,7 +21,7 @@ Returns a server instance.
 - `String: hostname` hostname to use.
 - `Boolean: spa` spa mode defaults to false.
 - `Boolean: cors` cors mode defaults to false.
-- `String: directory` path to static directory.
+- `String: path` path to static file or folder.
 
 
 ### server.listen(Function: callback)

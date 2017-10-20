@@ -3,17 +3,23 @@ const Servey = require('../index');
 var options = {
 	spa: true,
 	cors: true,
-	directory: __dirname + '/static'
+	cache: true,
+	port: 8080,
+	path: __dirname + '/static'
 };
 
-var server = Servey(options);
+var server = new Servey(options);
 
-server.open(function () {
-	console.log('open');
+server.on('error', function (error) {
+	console.log(error);
 });
 
 server.on('request', function (req) {
-	console.log(req.url);
+	// console.log(req.url);
+});
+
+server.open(function () {
+	console.log('open');
 });
 
 // server.close(function () {

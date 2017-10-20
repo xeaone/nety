@@ -17,18 +17,21 @@
     "url": "git+https://github.com/AlexanderElias/servey.git"
   },
   "keywords": [
-	  "static",
-	  "single",
-	  "page",
-	  "application",
-	  "http",
-	  "server",
-	  "dev"
-],
+    "static",
+    "single",
+    "page",
+    "application",
+    "http",
+    "server",
+    "dev"
+  ],
   "author": "Alexander Elias",
   "license": "MPL-2.0",
   "bugs": {
     "url": "https://github.com/AlexanderElias/servey/issues"
   },
-  "homepage": "https://github.com/AlexanderElias/servey#readme"
+  "homepage": "https://github.com/AlexanderElias/servey#readme",
+  "dependencies": {
+    "commander": "^2.11.0"
+  }
 }
