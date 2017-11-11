@@ -1,28 +1,37 @@
+
 # Servey
-A small but powerful static and single page application server. Currently Servey is only meant to be a development server. In the future it will be capable of production. But right now I do not think it is safe for production.
+A static and single page application (spa) server
 
+## Overview
+A small but powerful static and single page application server.
+Currently Servey is only meant to be a development server.
+In the future it will be capable of production.
+But right now I do not think it is safe for production.
 
-## Spa Mode
-All request will check to see if the path exists on the file system, if it does exists on file system then it will serve the index.html, unless the request contained an extension it will the respond with a 404.
+### Install
+`npm i servey --save`
 
-- path does not exists and has an extension then a 404 is served.
-- path does not exists and does not have an extension then the `/index.html` is served.
-- path does exists and has an extension then that the `path.extension` is served.
-- path does exists and does not have an extension then the `path/index.html` is served.
-
+### SPA
+All request will check to see if the path exists on the file system, Otherwise it will serve the default file (index.html).
 
 ## API
+Class: http.Server
 
-### Servey(Object: options)
-Returns a server instance.
+### Servey.create()
+Returns a server instance. Inherits Node.js Http.Server class.
+- `options: Object`
+	- `port: Number` port to use (default: `0`)
+	- `spa: Boolean` spa mode (defaults: `false`)
+	- `cors: Boolean` cors mode (defaults: `false`)
+	- `host: String` host to use (default: `0.0.0.0`)
+	- `folder: String` path to (defaults: `./public`)
+	- `file: String` path to default file (default: `index.html`)
+- `open: Function` Returns async function and starts listening.
+- `close: Function` Returns async function and stops listening.
 
-#### options
-- `Number: port` port to use.
-- `String: hostname` hostname to use.
-- `Boolean: spa` spa mode defaults to false.
-- `Boolean: cors` cors mode defaults to false.
-- `String: path` path to static file or folder.
+## Authors
+[AlexanderElias](https://github.com/AlexanderElias)
 
-
-### server.listen(Function: callback)
-A Servey server instance has a listen function which starts the server.
+## License
+[Why You Should Choose MPL-2.0](http://veldstra.org/2016/12/09/yoo-should-choose-mpl2-for-your-opensource-project.html)
+This project is licensed under the MPL-2.0 License

@@ -1,37 +1,40 @@
 {
-  "name": "servey",
-  "version": "1.0.3",
-  "description": "Servey | Single Page Application & Static Server",
-  "main": "index.js",
-  "bin": {
-    "servey": "bin/index.js"
-  },
-  "directories": {
-    "test": "test"
-  },
-  "scripts": {
-    "test": "node test/server"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/AlexanderElias/servey.git"
-  },
-  "keywords": [
-    "static",
-    "single",
-    "page",
-    "application",
-    "http",
-    "server",
-    "dev"
-  ],
-  "author": "Alexander Elias",
-  "license": "MPL-2.0",
-  "bugs": {
-    "url": "https://github.com/AlexanderElias/servey/issues"
-  },
-  "homepage": "https://github.com/AlexanderElias/servey#readme",
-  "dependencies": {
-    "commander": "^2.11.0"
-  }
+	"name": "servey",
+	"version": "2.0.0",
+	"description": "Servey | Single Page Application & Static Server",
+	"main": "index.js",
+	"bin": {
+		"servey": "bin/index.js"
+	},
+	"engines": {
+		"node": ">=7.6.0"
+	},
+	"directories": {
+		"test": "test"
+	},
+	"scripts": {
+		"test": "node test"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/AlexanderElias/servey.git"
+	},
+	"keywords": [
+		"static",
+		"single",
+		"page",
+		"application",
+		"http",
+		"server",
+		"dev"
+	],
+	"author": "Alexander Elias",
+	"license": "MPL-2.0",
+	"bugs": {
+		"url": "https://github.com/AlexanderElias/servey/issues"
+	},
+	"homepage": "https://github.com/AlexanderElias/servey#readme",
+	"dependencies": {
+		"commander": "^2.11.0"
+	}
 }
