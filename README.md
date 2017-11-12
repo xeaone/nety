@@ -15,9 +15,11 @@ But right now I do not think it is safe for production.
 All request will check to see if the path exists on the file system, Otherwise it will serve the default file (index.html).
 
 ## API
-Class: http.Server
 
-### Servey.create()
+### Servey.servers
+An Array of serves.
+
+### Servey.create(options)
 Returns a server instance. Inherits Node.js Http.Server class.
 - `options: Object`
 	- `port: Number` port to use (default: `0`)

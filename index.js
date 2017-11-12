@@ -1,7 +1,6 @@
 'use strict';
 
 const Server = require('./lib/server');
-// const Events = require('events');
 
 const Servey = {};
 
