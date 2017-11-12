@@ -20,7 +20,12 @@ const Servey = require('../index');
 			console.log(req.url);
 		});
 
+		server.on('open', function () {
+			console.log('open');
+		});
+
 		await server.open();
+
 		console.log('server open');
 		console.log(server.port);
 
