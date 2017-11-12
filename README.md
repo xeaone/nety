@@ -3,10 +3,7 @@
 A static and single page application (spa) server
 
 ## Overview
-A small but powerful static and single page application server.
-Currently Servey is only meant to be a development server.
-In the future it will be capable of production.
-But right now I do not think it is safe for production.
+A small but powerful static and single page application server. Uses async/await.
 
 ### Install
 `npm i servey --save`
@@ -27,6 +24,7 @@ Returns a server instance. Inherits Node.js Http.Server class.
 	- `cors: Boolean` cors mode (defaults: `false`)
 	- `host: String` host to use (default: `0.0.0.0`)
 	- `folder: String` path to (defaults: `./public`)
+	- `secure: Boolean` http or https (default: `false`)
 	- `file: String` path to default file (default: `index.html`)
 - `open: Function` Returns async function and starts listening.
 - `close: Function` Returns async function and stops listening.

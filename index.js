@@ -1,13 +1,20 @@
 'use strict';
 
-const Server = require('./lib/server');
+const HttpsServer = require('./lib/server/https');
+const HttpServer = require('./lib/server/http');
 
 const Servey = {};
 
 Servey.servers = [];
 
 Servey.create = function (options) {
-	const server = new Server(options);
+	let server;
+
+	if (options.secure) {
+		server = new HttpsServer(options);
+	} else {
+		server = new HttpServer(options);
+	}
 
 	Servey.servers.push({
 		server: server,

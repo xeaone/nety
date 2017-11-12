@@ -1,4 +1,5 @@
 {
+
 	"text/html": "html htm shtml",
 	"text/css": "css",
 	"text/xml": "xml",
@@ -73,4 +74,5 @@
 	"video/x-ms-wmv": "wmv",
 	"video/x-msvideo": "avi",
 	"video/mp4": "m4v mp4"
+
 }
