@@ -21,7 +21,10 @@ Returns a server instance. Inherits Node.js Http.Server class.
 - `options: Object`
 	- `port: Number` port to use (default: `0`)
 	- `spa: Boolean` spa mode (defaults: `false`)
-	- `cors: Boolean` cors mode (defaults: `false`)
+	- `cors: Boolean, Object` cors mode (defaults: `false`)
+		- `origin: String` Access-Control-Allow-Origin
+		- `methods: String` Access-Control-Allow-Methods
+		- `headers: String` Access-Control-Allow-Headers
 	- `host: String` host to use (default: `0.0.0.0`)
 	- `folder: String` path to (defaults: `./public`)
 	- `secure: Boolean` http or https (default: `false`)
