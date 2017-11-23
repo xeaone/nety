@@ -1,6 +1,8 @@
 
 {
 
+	".svg":    "image/svg+xml",
+
 	".bmp":    "image/bmp",
 	".css":    "text/css",
 	".gif":    "image/gif",

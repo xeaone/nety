@@ -25,6 +25,7 @@ Returns a server instance. Inherits Node.js Http.Server class.
 		- `origin: String` Access-Control-Allow-Origin
 		- `methods: String` Access-Control-Allow-Methods
 		- `headers: String` Access-Control-Allow-Headers
+		- `requestMethod: String` Access-Control-Request-Method
 	- `host: String` host to use (default: `0.0.0.0`)
 	- `folder: String` path to (defaults: `./public`)
 	- `secure: Boolean` http or https (default: `false`)
