@@ -10,7 +10,7 @@
 	".html":   "text/html",
 	".jpg":    "image/jpeg",
 	".jpeg":   "image/jpeg",
-	".js":     "application/javascript",
+	".js":     "application/javascript+module",
 	".json":   "application/json",
 	".lua":    "application/x-lua",
 	".sh":     "application/x-shellscript",
