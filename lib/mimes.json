@@ -48,7 +48,7 @@
 	".py":     "application/x-python",
 	".html":   "text/html",
 	".xml":    "text/xml",
-	".js":     "application/javascript",
+	".js":     "application/javascript+module",
 	".css":    "text/css",
 	".md":     "text/plain",
 
