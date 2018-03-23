@@ -1,4 +1,5 @@
 const Servey = require('../index');
+const Path = require('path');
 
 (async function () { try {
 
@@ -7,7 +8,7 @@ const Servey = require('../index');
 			cors: true,
 			cache: true,
 			port: 8080,
-			folder: './static'
+			folder: Path.join(__dirname, 'static')
 		};
 
 		const server = Servey.create(options);

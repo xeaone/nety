@@ -14,7 +14,7 @@ All request will check to see if the path exists on the file system, Otherwise i
 ## API
 
 ### Servey.servers
-An Array of serves.
+An Array of servers.
 
 ### Servey.create(options)
 Returns a server instance. Inherits Node.js Http.Server class.
@@ -30,8 +30,10 @@ Returns a server instance. Inherits Node.js Http.Server class.
 	- `folder: String` path to (defaults: `./public`)
 	- `secure: Boolean` http or https (default: `false`)
 	- `file: String` path to default file (default: `index.html`)
-- `open: Function` Returns async function and starts listening.
-- `close: Function` Returns async function and stops listening.
+- `setup: AsyncFunction`
+- `request: AsyncFunction`
+- `open: AsyncFunction` Starts listening.
+- `close: AsyncFunction` Stops listening.
 
 ## Authors
 [AlexanderElias](https://github.com/AlexanderElias)

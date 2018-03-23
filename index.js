@@ -3,25 +3,25 @@
 const HttpsServer = require('./lib/server/https');
 const HttpServer = require('./lib/server/http');
 
-const Servey = {};
+module.exports = {
 
-Servey.servers = [];
+	servers: [],
 
-Servey.create = function (options) {
-	let server;
+	create (options) {
+		let server;
 
-	if (options.secure) {
-		server = new HttpsServer(options);
-	} else {
-		server = new HttpServer(options);
+		if (options.secure) {
+			server = new HttpsServer(options);
+		} else {
+			server = new HttpServer(options);
+		}
+
+		this.servers.push({
+			server: server,
+			name: options.name
+		});
+
+		return server;
 	}
 
-	Servey.servers.push({
-		server: server,
-		name: options.name
-	});
-
-	return server;
 };
-
-module.exports = Servey;
