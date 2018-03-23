@@ -1,7 +1,7 @@
 {
 	"name": "servey",
 	"version": "2.2.0",
-	"description": "Servey | Single Page Application & Static Server",
+	"description": "Servey | A Static & Single Page Application Server",
 	"main": "index.js",
 	"bin": {
 		"servey": "bin/index.js"

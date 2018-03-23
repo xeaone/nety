@@ -1,11 +1,13 @@
 
 # Servey
-A static and single page application (spa) server
+A static & single page application server.
 
 ## Overview
 A small but powerful static and single page application server. Uses async/await.
+In SPA mode all request will check to see if the requested path exists on the file system.
+Otherwise it will serve the default file `index.html`.
 
-### Install
+## Install
 `npm i servey --save`
 
 ## Example
