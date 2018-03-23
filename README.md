@@ -8,6 +8,31 @@ A small but powerful static and single page application server. Uses async/await
 ### Install
 `npm i servey --save`
 
+## Example
+```js
+	const Servey = require('servey');
+
+	const server = Servey.create({
+		spa: true,
+		port: 8080,
+		folder: Path.join(__dirname, 'static')
+	});
+
+	server.on('error', function (error) {
+		console.error(error);
+	});
+
+	server.on('request', function (req) {
+		console.log(req.url);
+	});
+
+	server.on('open', function () {
+		console.log('open');
+	});
+
+	await server.open();
+```
+
 ### SPA
 All request will check to see if the path exists on the file system, Otherwise it will serve the default file (index.html).
 
