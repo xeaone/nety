@@ -9,9 +9,6 @@
 	"engines": {
 		"node": ">=7.6.0"
 	},
-	"directories": {
-		"test": "test"
-	},
 	"scripts": {
 		"t": "node test"
 	},
