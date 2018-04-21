@@ -5,9 +5,9 @@ const Path = require('path');
 (async function () {
 
 	const server = Servey.create({
-		spa: true,
-		cors: true,
-		cache: true,
+		// spa: true,
+		// cors: true,
+		// cache: true,
 		port: 8080,
 		folder: Path.join(__dirname, 'static')
 	});
@@ -26,7 +26,6 @@ const Path = require('path');
 
 	await server.open();
 
-	console.log('server open');
 	console.log(server.port);
 
 	// setTimeout(async function () {
