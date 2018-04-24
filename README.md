@@ -1,11 +1,16 @@
 
 # Servey
-A static & single page application server.
+Servey it up DOG!
 
 ## Overview
-A small but powerful static and single page application server. Uses async/await.
-In SPA mode all request will check to see if the requested path exists on the file system.
+In single page application mode all request will check to see if the requested path exists on the file system.
 Otherwise it will serve the default file `index.html`.
+
+## Features
+- api
+- async/await
+- static files
+- spa/single page application
 
 ## Install
 `npm i servey --save`
@@ -14,10 +19,23 @@ Otherwise it will serve the default file `index.html`.
 ```js
 	const Servey = require('servey');
 
-	const server = Servey.create({
-		spa: true,
+	const routes = [
+		{
+			path: '*',
+			method: 'get',
+			handler: async function (req, res) {
+				return await this.plugin.static({
+					spa: true,
+					path: this.path,
+					folder: './test/static'
+				});
+			}
+		}
+	];
+
+	const server = new Servey({
 		port: 8080,
-		folder: Path.join(__dirname, 'static')
+		routes: routes
 	});
 
 	server.on('error', function (error) {
@@ -35,32 +53,44 @@ Otherwise it will serve the default file `index.html`.
 	await server.open();
 ```
 
-### SPA
-All request will check to see if the path exists on the file system, Otherwise it will serve the default file (index.html).
-
 ## API
 
-### Servey.servers
-An Array of servers.
-
-### Servey.create(options)
-Returns a server instance. Inherits Node.js Http.Server class.
+### Servey: Class
+Inherits Events and returns a server instance.
 - `options: Object`
 	- `port: Number` port to use (default: `0`)
-	- `spa: Boolean` spa mode (defaults: `false`)
 	- `cors: Boolean, Object` cors mode (defaults: `false`)
 		- `origin: String` Access-Control-Allow-Origin
 		- `methods: String` Access-Control-Allow-Methods
 		- `headers: String` Access-Control-Allow-Headers
 		- `requestMethod: String` Access-Control-Request-Method
 	- `host: String` host to use (default: `0.0.0.0`)
-	- `folder: String` path to (defaults: `./public`)
 	- `secure: Boolean` http or https (default: `false`)
-	- `file: String` path to default file (default: `index.html`)
-- `setup: AsyncFunction`
-- `request: AsyncFunction`
+	- `routes: Array`
+		- `route: Object`
+			- `handler: AsyncFunction`
+				- `request: `
+				- `response: `
+				- `context: this`
+					- `plugin: Object`
+					- `url: Object` Url
+					- `path: String` Url.pathname
+					- `method: String` Request.method
 - `open: AsyncFunction` Starts listening.
 - `close: AsyncFunction` Stops listening.
+- `on: Function`
+	- `open: Event`
+	- `close: Event`
+	- `error: Event`
+	- `request: Event`
+	- `response: Event`
+
+### Servey.plugins: Array
+Default server plugins.
+- `static` Static file and single page application.
+	- `spa: Boolean` spa mode (defaults: `false`)
+	- `folder: String` path to (defaults: `./public`)
+	- `file: String` path to default file (default: `index.html`)
 
 ## Authors
 [AlexanderElias](https://github.com/AlexanderElias)

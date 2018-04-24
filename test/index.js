@@ -5,28 +5,21 @@ const Fs = require('fs');
 
 (async function () {
 
-	const server = Servey.create({
-		spa: true,
-		// cors: true,
-		// cache: true,
+	const server = new Servey({
+		cache: false,
+		cors: true,
 		port: 8080,
-		// folder: Path.join(__dirname, 'static')
 		routes: [
-			// {
-			// 	path: '/',
-			// 	method: 'get',
-			// 	handler: async function (req, res) {
-			// 		const path = Path.resolve('./test/static/index.html');
-			// 		// return Fs.createReadStream(path);
-			// 		// return res; broken
-			// 		// return '';
-			// 		return { test: 'test' };
-			// 	}
-			// }
 			{
 				path: '*',
 				method: 'get',
-				handler: Path.resolve('./test/static')
+				handler: async function (req, res) {
+					return await this.plugin.static({
+						spa: true,
+						path: this.path,
+						folder: './test/static'
+					});
+				}
 			}
 		]
 	});
