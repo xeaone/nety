@@ -33,11 +33,6 @@ Otherwise it will serve the default file `index.html`.
 		}
 	];
 
-	const server = new Servey({
-		port: 8080,
-		routes: routes
-	});
-
 	server.on('error', function (error) {
 		console.error(error);
 	});
@@ -48,6 +43,10 @@ Otherwise it will serve the default file `index.html`.
 
 	server.on('open', function () {
 		console.log('open');
+	});
+
+	server.on('close', function () {
+		console.log('close');
 	});
 
 	await server.open();

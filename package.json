@@ -1,6 +1,6 @@
 {
 	"name": "servey",
-	"version": "2.2.0",
+	"version": "3.0.0",
 	"description": "Servey | A Static & Single Page Application Server",
 	"main": "index.js",
 	"bin": {

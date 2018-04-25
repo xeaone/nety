@@ -36,13 +36,16 @@ const Fs = require('fs');
 		console.log('open');
 	});
 
+	server.on('close', function () {
+		console.log('close');
+	});
+
 	await server.open();
 
 	console.log(server.port);
 
 	// setTimeout(async function () {
 	// 	await server.close();
-	// 	console.log('server close');
 	// }, 3000);
 
 }()).catch(function (error) {
