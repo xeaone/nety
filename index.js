@@ -209,6 +209,17 @@ module.exports = class Servey extends Events {
 		} else {
 			const route = await self.getRoute(path, method);
 
+			// if (
+			// 	route &&
+			// 	self.auth &&
+			// 	!route.options ||
+			// 	route.options &&
+			// 	route.options.auth === true  ||
+			// 	route.options.auth === undefined
+			// ) {
+			//
+			// }
+
 			if (!route) {
 				result.code = 404;
 			} else if (!route.handler) {
@@ -216,6 +227,8 @@ module.exports = class Servey extends Events {
 				const error = new Error('route handler required');
 				self.emit('error', error);
 			} else if (typeof route.handler === 'function') {
+
+
 
 				const context = {
 					url: url,
