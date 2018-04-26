@@ -21,10 +21,8 @@ const ErrorHandler = async function (path, code) {
 const RESTRICT = /^(\.)+/;
 
 module.exports = {
-
 	name: 'static',
-
-	handler: async function (data) {
+	method: async function (data) {
 
 		data = data || {};
 		data = typeof data === 'string' ? { path: data } : data;
@@ -80,5 +78,4 @@ module.exports = {
 
 		return result;
 	}
-
 };

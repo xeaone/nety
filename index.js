@@ -8,27 +8,15 @@ const Http = require('http');
 const Https = require('https');
 const Events = require('events');
 const Stream = require('stream');
+const Buffer = require('buffer').Buffer;
 
 const Utility = require('./lib/utility');
+const BasicPlugin = require('./plugins/basic');
 const StaticPlugin = require('./plugins/static');
 
 const MIMES = Utility.mimes;
 const MESSAGES = Utility.messages;
 const METHODS = Utility.methods.join(',');
-
-const DEFAULTS = {
-	port: 0,
-	routes: [],
-	plugins: [],
-	plugin: {},
-	cors: false,
-	cache: true,
-	secure: null,
-	maxBytes: 1e6, // 1MB
-	host: '0.0.0.0',
-	contentType: 'txt',
-	hostname: 'localhost'
-};
 
 module.exports = class Servey extends Events {
 
@@ -39,16 +27,26 @@ module.exports = class Servey extends Events {
 
 		options = options || {};
 
-		Utility.merge(options, DEFAULTS);
-		Object.assign(self, options);
+		self.plugin = {};
+		self.port = options.port === undefined ? 0 : options.port;
+		self.auth = options.auth === undefined ? null : options.auth;
+		self.cors = options.cors === undefined ? false : options.cors;
+		self.cache = options.cache === undefined ? true : options.cache;
+		self.routes = options.routes === undefined ? [] : options.routes;
+		self.host = options.host === undefined ? '0.0.0.0' : options.host;
+		self.plugins = options.plugins === undefined ? [] : options.plugins;
+		self.secure = options.secure === undefined ? null : options.secure;
+		self.maxBytes = options.maxBytes === undefined ? 1e6 : options.maxBytes; // 1MB
+		self.hostname = options.hostname === undefined ? 'localhost' : options.hostname;
+		self.contentType = options.contentType === undefined ? 'txt' : options.contentType;
 
-		self.plugins = [ StaticPlugin ].concat(self.plugins);
+		self.plugins.push(StaticPlugin, BasicPlugin);
 
 		for (let plugin of self.plugins) {
 			if (plugin.name in self.plugin) {
 				throw new Error('duplicate plugin');
 			} else {
-				self.plugin[plugin.name] = plugin.handler;
+				self.plugin[plugin.name] = plugin.method;
 			}
 		}
 
@@ -65,6 +63,9 @@ module.exports = class Servey extends Events {
 				return self.handler(request, response);
 			}).catch(function (error) {
 				self.emit('error', error);
+				return self.ender(request, response, { code: 500 });
+			}).catch(function (error) {
+				throw error;
 			});
 		});
 
@@ -85,7 +86,7 @@ module.exports = class Servey extends Events {
 			head['Cache-Control'] = self.cache ? 'max-age=3600' : 'no-cache';
 		}
 
-		if (self.cors.constructor === Object) {
+		if (self.cors && self.cors.constructor === Object) {
 			head['Access-Control-Allow-Origin'] = self.cors.origin;
 			head['Access-Control-Allow-Methods'] = self.cors.methods;
 			head['Access-Control-Allow-Headers'] = self.cors.headers;
@@ -158,34 +159,38 @@ module.exports = class Servey extends Events {
 		});
 	}
 
-	async ender (request, response, result) {
+	async ender (request, response, data) {
 		const self = this;
+		const head = await self.createHead();
 
-		if (!result.body) {
-			result.body = {
-				code: result.code,
-				message: result.message || MESSAGES[result.code]
+		data.head = data.head || {};
+		data.head = Object.assign(head, data.head);
+
+		if (!data.body) {
+			data.body = {
+				code: data.code,
+				message: data.message || MESSAGES[data.code]
 			};
 		}
 
-		if (result.body instanceof Stream.Readable) {
+		if (data.body instanceof Stream.Readable) {
 
-			const mime = await self.getMime(result.body.path);
-			result.head['Content-Type'] = `${mime}; charset=utf8`;
+			const mime = await self.getMime(data.body.path);
+			data.head['Content-Type'] = `${mime}; charset=utf8`;
 
-			await self.streamer(request, response, result);
+			await self.streamer(request, response, data);
 
 		} else {
 
-			if (typeof result.body === 'object') {
+			if (typeof data.body === 'object') {
 				const mime = await self.getMime('json');
-				result.head['Content-Type'] = `${mime}; charset=utf8`;
-				result.body = JSON.stringify(result.body);
+				data.head['Content-Type'] = `${mime}; charset=utf8`;
+				data.body = JSON.stringify(data.body);
 			}
 
-			result.head['Content-Length'] = Buffer.byteLength(result.body);
-			response.writeHead(result.code, result.head);
-			response.write(result.body);
+			data.head['Content-Length'] = Buffer.byteLength(data.body);
+			response.writeHead(data.code, data.head);
+			response.write(data.body);
 		}
 
 		response.end();
@@ -193,65 +198,74 @@ module.exports = class Servey extends Events {
 
 	async handler (request, response) {
 		const self = this;
-		const result = {};
 
 		self.emit('request', request, response);
 
-		let url = Url.parse(request.url);
-		let method = request.method;
-		let path = url.pathname;
+		const url = Url.parse(request.url);
+		const method = request.method;
+		const path = url.pathname;
 
-		result.head = await self.createHead();
+		const data = {
+			head: {},
+			body: null,
+			code: null,
+			credentials: null
+		};
 
 		if (path !== '/' && path.slice(-1) === '/') {
-			result.code = 301;
-			result.head.Location = `${path.slice(0, -1)}${url.search || ''}${url.hash || ''}`;
-		} else {
-			const route = await self.getRoute(path, method);
+			data.code = 301;
+			data.head['Location'] = `${path.slice(0, -1)}${url.search || ''}${url.hash || ''}`;
+			return await self.ender(request, response, data);
+		}
 
-			// if (
-			// 	route &&
-			// 	self.auth &&
-			// 	!route.options ||
-			// 	route.options &&
-			// 	route.options.auth === true  ||
-			// 	route.options.auth === undefined
-			// ) {
-			//
-			// }
+		if (self.auth) {
 
-			if (!route) {
-				result.code = 404;
-			} else if (!route.handler) {
-				result.code = 500;
-				const error = new Error('route handler required');
-				self.emit('error', error);
-			} else if (typeof route.handler === 'function') {
+			if (!self.auth.name) {
+				throw new Error('auth name required');
+			}
 
+			if (!self.auth.type) {
+				throw new Error('auth type required');
+			}
 
+			if (!self.auth.validate) {
+				throw new Error('auth validate required');
+			}
 
-				const context = {
-					url: url,
-					path: path,
-					method: method,
-					plugin: self.plugin
-				};
+			if (!(self.auth.name in self.plugin) ) {
+				throw new Error('auth plugin required');
+			}
 
-				const handle = await route.handler.call(context, request, response);
+			const result = await self.plugin[self.auth.name].call(self, request, response);
 
-				result.body = handle.body;
-				result.message = handle.message;
-				result.code = handle.code || 200;
-
+			if (result.code === 200) {
+				data.credentials = result.credentials || {};
 			} else {
-				result.code = 500;
-				const error = new Error('route handler requires a string or function');
-				self.emit('error', error);
+				data.code = result.code;
+				data.body = result.body;
+				data.message = result.message;
+				data.head['WWW-Authenticate'] = `${self.auth.type} realm="Secure"`;
+				return await self.ender(request, response, data);
 			}
 
 		}
 
-		await self.ender(request, response, result);
+		const route = await self.getRoute(path, method);
+
+		if (!route) {
+			data.code = 404;
+		} else if (!route.handler) {
+			throw new Error('route handler required');
+		} else if (typeof route.handler === 'function') {
+			const result = await route.handler.call(self, request, response);
+			data.body = result.body;
+			data.message = result.message;
+			data.code = result.code || 200;
+		} else {
+			throw new Error('route handler requires a string or function');
+		}
+
+		await self.ender(request, response, data);
 	}
 
 	async open () {
