@@ -3,3 +3,4 @@ check about gzip compression
 check about in memory file caching
 check about vhosts
 check about proxy
+added a bear auth plugin
