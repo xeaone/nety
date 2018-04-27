@@ -13,6 +13,7 @@ const Buffer = require('buffer').Buffer;
 const Utility = require('./lib/utility');
 const BasicPlugin = require('./plugins/basic');
 const StaticPlugin = require('./plugins/static');
+const RedirectPlugin = require('./plugins/redirect');
 
 const MIMES = Utility.mimes;
 const MESSAGES = Utility.messages;
@@ -28,6 +29,7 @@ module.exports = class Servey extends Events {
 		options = options || {};
 
 		self.plugin = {};
+
 		self.port = options.port === undefined ? 0 : options.port;
 		self.auth = options.auth === undefined ? null : options.auth;
 		self.cors = options.cors === undefined ? false : options.cors;
@@ -38,15 +40,24 @@ module.exports = class Servey extends Events {
 		self.secure = options.secure === undefined ? null : options.secure;
 		self.maxBytes = options.maxBytes === undefined ? 1e6 : options.maxBytes; // 1MB
 		self.hostname = options.hostname === undefined ? 'localhost' : options.hostname;
-		self.contentType = options.contentType === undefined ? 'txt' : options.contentType;
 
-		self.plugins.push(StaticPlugin, BasicPlugin);
+		self.mime = options.mime === undefined ? MIMES['txt'] : options.mime;
+		self.charset = options.charset === undefined ? 'utf8' : options.charset;
+		self.contentType = options.contentType === undefined ? `${self.mime}; charset=${self.charset}` : options.contentType;
+
+		self.plugins.push(StaticPlugin, BasicPlugin, RedirectPlugin);
 
 		for (let plugin of self.plugins) {
 			if (plugin.name in self.plugin) {
 				throw new Error('duplicate plugin');
 			} else {
-				self.plugin[plugin.name] = plugin.method;
+				self.plugin[plugin.name] = async function () {
+					const result = await plugin.method.apply(this, arguments);
+					if (typeof result !== 'object') {
+						throw new Error(`${plugin.name} plugin result type invalid`);
+					}
+					return result;
+				}
 			}
 		}
 
@@ -62,10 +73,15 @@ module.exports = class Servey extends Events {
 			Promise.resolve().then(function () {
 				return self.handler(request, response);
 			}).catch(function (error) {
+
 				self.emit('error', error);
-				return self.ender(request, response, { code: 500 });
-			}).catch(function (error) {
-				throw error;
+
+				return self.ender({
+					code: 500,
+					request: request,
+					response: response
+				});
+
 			});
 		});
 
@@ -74,9 +90,8 @@ module.exports = class Servey extends Events {
 	async createHead () {
 		const self = this;
 		const head = {};
-		const contentType = MIMES[self.contentType];
 
-		head['Content-Type'] = `${contentType}; charset=utf8`;
+		head['Content-Type'] = self.contentType;
 
 		if (typeof self.cache === 'string') {
 			head['Cache-Control'] = self.cache;
@@ -86,7 +101,7 @@ module.exports = class Servey extends Events {
 			head['Cache-Control'] = self.cache ? 'max-age=3600' : 'no-cache';
 		}
 
-		if (self.cors && self.cors.constructor === Object) {
+		if (self.cors.constructor === Object) {
 			head['Access-Control-Allow-Origin'] = self.cors.origin;
 			head['Access-Control-Allow-Methods'] = self.cors.methods;
 			head['Access-Control-Allow-Headers'] = self.cors.headers;
@@ -95,8 +110,8 @@ module.exports = class Servey extends Events {
 		} else if (self.cors === true) {
 			head['Access-Control-Allow-Origin'] = '*';
 			head['Access-Control-Request-Method'] = '*';
-			head['Access-Control-Allow-Credentials'] = true;
 			head['Access-Control-Allow-Methods'] = METHODS;
+			head['Access-Control-Allow-Credentials'] = true;
 			head['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Range';
 		}
 
@@ -107,11 +122,13 @@ module.exports = class Servey extends Events {
 		const self = this;
 		const data = path ? Path.extname(path) : self.contentType;
 		const extension = data.charAt(0) === '.' ? data.slice(1) : data;
-		return MIMES[extension || self.contentType];
+		return extension ? MIMES[extension] : self.mime;
 	}
 
-	async getRoute (path, method) {
+	async router (context) {
 		const routes = this.routes;
+		const method = context.method;
+		const path = context.url.pathname;
 
 		for (let route of routes) {
 			if (
@@ -126,151 +143,169 @@ module.exports = class Servey extends Events {
 		return null;
 	}
 
-	async getData (request) {
-		return await new Promise(function (resolve, reject) {
+	async uploader (context) {
+		const self = this;
+		return new Promise(function (resolve, reject) {
 			let data = '';
 
-			request.on('data', function (chunk) {
-	            if (data.length > this.maxBytes) {
-					request.connection.destroy();
+			context.request.on('error', reject);
+
+			context.request.on('data', function (chunk) {
+	            if (data.length > self.maxBytes) {
+					context.request.connection.destroy();
+					// TODO responed with closed connection
 				} else {
 					data += chunk;
 				}
 	        });
 
-	        request.on('end', function () {
+	        context.request.on('end', function () {
 				resolve(data.toString());
 	        });
 
 		});
 	}
 
-	async streamer (request, response, result) {
-		return await new Promise(function (resolve, reject) {
-			result.body.on('error', reject);
-
-			result.body.on('open', function () {
-				response.writeHead(result.code, result.head);
-			});
-
-			result.body.on('close', resolve);
-
-			result.body.pipe(response);
+	async streamer (context) {
+		return new Promise(function (resolve, reject) {
+			context.body.on('end', resolve);
+			context.body.on('error', reject);
+			context.body.pipe(context.response);
 		});
 	}
 
-	async ender (request, response, data) {
+	async ender (context) {
 		const self = this;
 		const head = await self.createHead();
 
-		data.head = data.head || {};
-		data.head = Object.assign(head, data.head);
+		context.head = context.head || {};
+		context.head = Object.assign(head, context.head);
 
-		if (!data.body) {
-			data.body = {
-				code: data.code,
-				message: data.message || MESSAGES[data.code]
+		if (!context.code) {
+			context.code = 200;
+		}
+
+		if (!context.body) {
+			context.body = {
+				code: context.code,
+				message: context.message || MESSAGES[context.code]
 			};
 		}
 
-		if (data.body instanceof Stream.Readable) {
-
-			const mime = await self.getMime(data.body.path);
-			data.head['Content-Type'] = `${mime}; charset=utf8`;
-
-			await self.streamer(request, response, data);
-
-		} else {
-
-			if (typeof data.body === 'object') {
-				const mime = await self.getMime('json');
-				data.head['Content-Type'] = `${mime}; charset=utf8`;
-				data.body = JSON.stringify(data.body);
-			}
-
-			data.head['Content-Length'] = Buffer.byteLength(data.body);
-			response.writeHead(data.code, data.head);
-			response.write(data.body);
+		if (context.body instanceof Stream.Readable) {
+			const mime = await self.getMime(context.body.path);
+			context.head['Content-Type'] = `${mime}; charset=utf8`;
+			context.response.writeHead(context.code, context.head);
+			return await self.streamer(context);
 		}
 
-		response.end();
+		if (typeof context.body === 'object') {
+			const mime = await self.getMime('json');
+			context.head['Content-Type'] = `${mime}; charset=utf8`;
+			context.body = JSON.stringify(context.body);
+		}
+
+		context.head['Content-Length'] = Buffer.byteLength(context.body);
+		context.response.writeHead(context.code, context.head);
+		context.response.end(context.body);
 	}
 
 	async handler (request, response) {
 		const self = this;
 
-		self.emit('request', request, response);
+		self.emit('request', request);
 
-		const url = Url.parse(request.url);
-		const method = request.method;
-		const path = url.pathname;
-
-		const data = {
+		let context = {
+			request,
+			response,
 			head: {},
 			body: null,
 			code: null,
-			credentials: null
+			instance: self,
+			credentials: null,
+			plugin: self.plugin,
+			method: request.method,
+			url: Url.parse(request.url)
 		};
 
-		if (path !== '/' && path.slice(-1) === '/') {
-			data.code = 301;
-			data.head['Location'] = `${path.slice(0, -1)}${url.search || ''}${url.hash || ''}`;
-			return await self.ender(request, response, data);
+		const route = await self.router(context);
+		const routeOptions = route && route.options ? route.options : {};
+		const serverOptions = { auth: self.auth, cors: self.cors, cache: self.cache };
+		const options = Object.assign({}, serverOptions, routeOptions);
+
+		if (context.url.pathname !== '/' && context.url.pathname.slice(-1) === '/') {
+			const pathname = context.url.pathname.replace(/\/+/, '/').slice(0, -1) || '/';
+			const location = `${pathname}${context.url.search || ''}${context.url.hash || ''}`;
+
+			const result = await self.plugin.redirect(context, location);
+
+			Object.assign(context, result);
+
+			return await self.ender(context);
 		}
-
-		if (self.auth) {
-
-			if (!self.auth.name) {
-				throw new Error('auth name required');
-			}
-
-			if (!self.auth.type) {
-				throw new Error('auth type required');
-			}
-
-			if (!self.auth.validate) {
-				throw new Error('auth validate required');
-			}
-
-			if (!(self.auth.name in self.plugin) ) {
-				throw new Error('auth plugin required');
-			}
-
-			const result = await self.plugin[self.auth.name].call(self, request, response);
-
-			if (result.code === 200) {
-				data.credentials = result.credentials || {};
-			} else {
-				data.code = result.code;
-				data.body = result.body;
-				data.message = result.message;
-				data.head['WWW-Authenticate'] = `${self.auth.type} realm="Secure"`;
-				return await self.ender(request, response, data);
-			}
-
-		}
-
-		const route = await self.getRoute(path, method);
 
 		if (!route) {
-			data.code = 404;
-		} else if (!route.handler) {
+			context.code = 404;
+			return await self.ender(context);
+		}
+
+		if (!route.handler) {
 			throw new Error('route handler required');
-		} else if (typeof route.handler === 'function') {
-			const result = await route.handler.call(self, request, response);
-			data.body = result.body;
-			data.message = result.message;
-			data.code = result.code || 200;
-		} else {
+		}
+
+		if (typeof route.handler !== 'function') {
 			throw new Error('route handler requires a string or function');
 		}
 
-		await self.ender(request, response, data);
+		if (
+			(route.options && route.options.auth) ||
+			(self.auth && !route.options || route.options.auth !== false)
+		) {
+			const auth = route.options && typeof route.options.auth === 'object' ? route.options.auth : self.auth;
+
+			if (typeof auth !== 'object') {
+				throw new Error('auth type invalid');
+			}
+
+			if (!auth.name) {
+				throw new Error('auth name required');
+			}
+
+			if (!auth.type) {
+				throw new Error('auth type required');
+			}
+
+			if (!auth.validate) {
+				throw new Error('auth validate required');
+			}
+
+			if (!(auth.name in self.plugin) ) {
+				throw new Error('auth plugin required');
+			}
+
+			context.head['WWW-Authenticate'] = `${auth.type} realm="Secure"`;
+
+			const result = await self.plugin[auth.name](context, auth.validate);
+
+			if (result.code !== 200) {
+				Object.assign(context, result);
+
+				return await self.ender(context);
+			}
+
+			context.credentials = result.credentials || {};
+		}
+
+		const result = await route.handler(context);
+
+		Object.assign(context, result);
+
+		await self.ender(context);
 	}
 
 	async open () {
 		const self = this;
-		return await new Promise(function (resolve) {
+		return new Promise(function (resolve) {
 			const data = { port: self.port, host: self.host };
 			self.listener.listen(data, function () {
 				const address = self.listener.address();
@@ -286,7 +321,7 @@ module.exports = class Servey extends Events {
 
 	async close () {
 		const self = this;
-		return await new Promise(function (resolve) {
+		return new Promise(function (resolve) {
 			self.listener.close(function () {
 				resolve();
 				self.emit('close');

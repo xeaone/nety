@@ -6,13 +6,61 @@ const Url = require('url');
 
 (async function () {
 
+	const routes = [
+		{
+			path: '/difauth',
+			method: 'get',
+			options: {
+				auth: {
+					type: 'Basic',
+					name: 'basic',
+					validate: async function (context, username, password) {
+						if (username === 'loo' && password === 'bar') {
+							return { valid: true, credentials: { username: 'loo'} };
+						} else {
+							return { valid: false };
+						}
+					}
+				}
+			},
+			handler: async function (context) {
+				return {
+					body: 'difauth'
+				};
+			}
+		},
+		{
+			path: '/noauth',
+			method: 'get',
+			options: {
+				auth: false
+			},
+			handler: async function (context) {
+				return {
+					body: 'noauth'
+				};
+			}
+		},
+		{
+			path: '*',
+			method: 'get',
+			handler: async function (context) {
+				return await context.plugin.static({
+					spa: true,
+					folder: './test/static',
+					path: context.url.pathname
+				});
+			}
+		}
+	];
+
 	const server = new Servey({
 		cache: false,
 		port: 8080,
 		auth: {
 			type: 'Basic',
 			name: 'basic',
-			validate: async function (username, password) {
+			validate: async function (context, username, password) {
 				if (username === 'foo' && password === 'bar') {
 					return { valid: true, credentials: { username: 'foo'} };
 				} else {
@@ -20,20 +68,7 @@ const Url = require('url');
 				}
 			}
 		},
-		routes: [
-			{
-				path: '*',
-				method: 'get',
-				handler: async function (req, res) {
-					const url = Url.parse(req.url);
-					return await this.plugin.static({
-						spa: true,
-						path: url.pathname,
-						folder: './test/static'
-					});
-				}
-			}
-		]
+		routes: routes
 	});
 
 	server.on('error', function (error) {
@@ -41,7 +76,7 @@ const Url = require('url');
 	});
 
 	server.on('request', function (req) {
-		console.log(req.url);
+		// console.log(req.url);
 	});
 
 	server.on('open', function () {

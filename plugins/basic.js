@@ -2,9 +2,9 @@
 
 module.exports = {
 	name: 'basic',
-	method: async function (request, response) {
+	method: async function (context, validate) {
 
-		const authorization = request.headers['authorization'];
+		const authorization = context.request.headers['authorization'];
 
 		if (!authorization) {
 			return { code: 401 };
@@ -41,11 +41,7 @@ module.exports = {
 			return { code: 401, message: 'authentication header missing credential' };
 		}
 
-		// if (!this.auth.validate) {
-		// 	throw new Error('auth validate method required');
-		// }
-
-		const data = await this.auth.validate(username, password, request, response);
+		const data = await validate(context, username, password);
 
 		if (!data.valid) {
 			return { code: 401, message: 'invalid credentials' };
