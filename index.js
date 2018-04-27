@@ -1,5 +1,6 @@
 'use strict';
 
+const Os = require('os');
 const Fs = require('fs');
 const Url = require('url');
 const Path = require('path');
@@ -18,6 +19,7 @@ const RedirectPlugin = require('./plugins/redirect');
 const MIMES = Utility.mimes;
 const MESSAGES = Utility.messages;
 const METHODS = Utility.methods.join(',');
+const HOSTNAME = Os.hostname() || 'localhost';
 
 module.exports = class Servey extends Events {
 
@@ -29,17 +31,17 @@ module.exports = class Servey extends Events {
 		options = options || {};
 
 		self.plugin = {};
+		self.information = {};
 
 		self.port = options.port === undefined ? 0 : options.port;
 		self.auth = options.auth === undefined ? null : options.auth;
 		self.cors = options.cors === undefined ? false : options.cors;
 		self.cache = options.cache === undefined ? true : options.cache;
 		self.routes = options.routes === undefined ? [] : options.routes;
-		self.host = options.host === undefined ? '0.0.0.0' : options.host;
 		self.plugins = options.plugins === undefined ? [] : options.plugins;
 		self.secure = options.secure === undefined ? null : options.secure;
 		self.maxBytes = options.maxBytes === undefined ? 1e6 : options.maxBytes; // 1MB
-		self.hostname = options.hostname === undefined ? 'localhost' : options.hostname;
+		self.hostname = options.hostname === undefined ? HOSTNAME : options.hostname;
 
 		self.mime = options.mime === undefined ? MIMES['txt'] : options.mime;
 		self.charset = options.charset === undefined ? 'utf8' : options.charset;
@@ -229,8 +231,25 @@ module.exports = class Servey extends Events {
 
 		const route = await self.router(context);
 		const routeOptions = route && route.options ? route.options : {};
-		const serverOptions = { auth: self.auth, cors: self.cors, cache: self.cache };
+
+		const serverOptions = {
+			auth: self.auth,
+			cors: self.cors,
+			cache: self.cache
+		};
+
 		const options = Object.assign({}, serverOptions, routeOptions);
+
+		if (options.vhost) {
+			let vhosts = [].concat(options.vhost);
+			let hostname = request.headers.host;
+
+			if (!vhosts.includes(hostname)) {
+				context.code = 404;
+				return await self.ender(context);
+			}
+
+		}
 
 		if (context.url.pathname !== '/' && context.url.pathname.slice(-1) === '/') {
 			const pathname = context.url.pathname.replace(/\/+/, '/').slice(0, -1) || '/';
@@ -305,13 +324,9 @@ module.exports = class Servey extends Events {
 	async open () {
 		const self = this;
 		return new Promise(function (resolve) {
-			const data = { port: self.port, host: self.host };
-			self.listener.listen(data, function () {
-				const address = self.listener.address();
-
-				self.port = address.port;
-				self.host = address.host;
-
+			const options = { port: self.port, host: self.hostname };
+			self.listener.listen(options, function () {
+				self.information = self.listener.address();
 				resolve();
 				self.emit('open');
 			});

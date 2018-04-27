@@ -44,6 +44,9 @@ const Url = require('url');
 		{
 			path: '*',
 			method: 'get',
+			options: {
+				vhost: ['test.com','localhost:8080'],
+			},
 			handler: async function (context) {
 				return await context.plugin.static({
 					spa: true,
@@ -56,6 +59,7 @@ const Url = require('url');
 
 	const server = new Servey({
 		cache: false,
+		hostname: 'localhost',
 		port: 8080,
 		auth: {
 			type: 'Basic',
