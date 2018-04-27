@@ -69,22 +69,21 @@ module.exports = class Servey extends Events {
 			self.listener = Http.createServer();
 		}
 
-		self.listener.on('request', function (request, response) {
-			Promise.resolve().then(function () {
-				return self.handler(request, response);
-			}).catch(function (error) {
+		self.listener.on('request', self.callback.bind(self));
+	}
 
-				self.emit('error', error);
-
-				return self.ender({
-					code: 500,
-					request: request,
-					response: response
-				});
-
+	callback (request, response) {
+		const self = this;
+		Promise.resolve().then(function () {
+			return self.handler(request, response);
+		}).catch(function (error) {
+			self.emit('error', error);
+			return self.ender({
+				code: 500,
+				request: request,
+				response: response
 			});
 		});
-
 	}
 
 	async createHead () {
