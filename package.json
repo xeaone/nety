@@ -2,7 +2,7 @@
 	"name": "servey",
 	"version": "3.0.0",
 	"description": "Servey | A Static & Single Page Application Server",
-	"main": "index.js",
+	"main": "lib/server.js",
 	"bin": {
 		"servey": "bin/index.js"
 	},

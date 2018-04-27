@@ -1,5 +1,5 @@
 
-const Servey = require('../index');
+const Servey = require('../lib/server');
 const Path = require('path');
 const Fs = require('fs');
 const Url = require('url');
