@@ -48,7 +48,7 @@ const Url = require('url');
 				vhost: ['test.com','localhost:8080'],
 			},
 			handler: async function (context) {
-				return await context.plugin.static({
+				return await context.tool.static({
 					spa: true,
 					folder: './test/static',
 					path: context.url.pathname
