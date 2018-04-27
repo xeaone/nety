@@ -88,35 +88,35 @@ module.exports = class Servey extends Events {
 		});
 	}
 
-	async createHead () {
+	async createHead (data) {
 		const self = this;
 		const head = {};
 
-		head['Content-Type'] = self.contentType;
+		head['content-type'] = self.contentType;
 
 		if (typeof self.cache === 'string') {
-			head['Cache-Control'] = self.cache;
+			head['cache-control'] = self.cache;
 		} else if (typeof self.cache === 'number') {
-			head['Cache-Control'] = `max-age=${self.cache}`;
+			head['cache-control'] = `max-age=${self.cache}`;
 		} else if (typeof self.cache === 'boolean') {
-			head['Cache-Control'] = self.cache ? 'max-age=3600' : 'no-cache';
+			head['cache-control'] = self.cache ? 'max-age=3600' : 'no-cache';
 		}
 
 		if (self.cors.constructor === Object) {
-			head['Access-Control-Allow-Origin'] = self.cors.origin;
-			head['Access-Control-Allow-Methods'] = self.cors.methods;
-			head['Access-Control-Allow-Headers'] = self.cors.headers;
-			head['Access-Control-Request-Method'] = self.cors.requestMethod;
-			head['Access-Control-Allow-Credentials'] = self.cors.credentials;
+			head['access-control-allow-origin'] = self.cors.origin || '*';
+			head['access-control-allow-methods'] = self.cors.methods || '*';
+			head['access-control-request-method'] = self.cors.requestMethod || METHODS;
+			head['access-control-allow-credentials'] = self.cors.credentials || 'true';
+			head['access-control-allow-Headers'] = self.cors.headers || 'origin, x-requested-with, content-type, accept, range';
 		} else if (self.cors === true) {
-			head['Access-Control-Allow-Origin'] = '*';
-			head['Access-Control-Request-Method'] = '*';
-			head['Access-Control-Allow-Methods'] = METHODS;
-			head['Access-Control-Allow-Credentials'] = true;
-			head['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Range';
+			head['access-control-allow-origin'] = '*';
+			head['access-control-request-method'] = '*';
+			head['access-control-allow-methods'] = METHODS;
+			head['access-control-allow-credentials'] = 'true';
+			head['access-control-allow-headers'] = 'origin, x-requested-with, content-type, accept, range';
 		}
 
-		return head;
+		return Object.assign(head, data);
 	}
 
 	async getMime (path) {
@@ -177,10 +177,8 @@ module.exports = class Servey extends Events {
 
 	async ender (context) {
 		const self = this;
-		const head = await self.createHead();
 
-		context.head = context.head || {};
-		context.head = Object.assign(head, context.head);
+		context.head = await self.createHead(context.head);
 
 		if (!context.code) {
 			context.code = 200;
@@ -195,18 +193,18 @@ module.exports = class Servey extends Events {
 
 		if (context.body instanceof Stream.Readable) {
 			const mime = await self.getMime(context.body.path);
-			context.head['Content-Type'] = `${mime}; charset=utf8`;
+			context.head['content-type'] = `${mime}; charset=utf8`;
 			context.response.writeHead(context.code, context.head);
 			return await self.streamer(context);
 		}
 
 		if (typeof context.body === 'object') {
 			const mime = await self.getMime('json');
-			context.head['Content-Type'] = `${mime}; charset=utf8`;
+			context.head['content-type'] = `${mime}; charset=utf8`;
 			context.body = JSON.stringify(context.body);
 		}
 
-		context.head['Content-Length'] = Buffer.byteLength(context.body);
+		context.head['content-length'] = Buffer.byteLength(context.body);
 		context.response.writeHead(context.code, context.head);
 		context.response.end(context.body);
 	}
@@ -301,7 +299,7 @@ module.exports = class Servey extends Events {
 				throw new Error('auth plugin required');
 			}
 
-			context.head['WWW-Authenticate'] = `${auth.type} realm="Secure"`;
+			context.head['www-authenticate'] = `${auth.type} realm="Secure"`;
 
 			const result = await self.plugin[auth.name](context, auth.validate);
 
