@@ -1,5 +1,7 @@
+
 'use strict';
 
+const Os = require('os');
 const Fs = require('fs');
 const Url = require('url');
 const Path = require('path');
@@ -12,30 +14,47 @@ const Buffer = require('buffer').Buffer;
 
 const Tool = require('./tool');
 const Route = require('./route');
-const Option = require('./option');
 const Utility = require('./utility');
 
-module.exports = class Servey extends Events {
+const defaults = {
+	port: 0,
+	routes: [],
+	auth: null,
+	cors: false,
+	cache: true,
+	secure: null,
+	maxBytes: 1e6,
+	listener: null,
+	information: {},
+	methods: Utility.methods,
+	messages: Utility.messages,
+	hostname: Os.hostname() || 'localhost',
+	contentType: 'text/plain; charset=utf8',
+	methodsString: Utility.methods.join(',')
+};
+
+module.exports = class Core extends Events {
 
 	constructor (options) {
 		super();
 
-		options = options || {};
-
-		if (options.listener) {
-			options.listener.on('request', this.callback.bind(this));
-		} else if (options.secure) {
-			options.listener = Https.createServer(options.secure, this.callback.bind(this));
-		} else {
-			options.listener = Http.createServer(this.callback.bind(this));
+		if (!options.listener) {
+			if (options.secure) {
+				options.listener = Https.createServer(self.secure);
+			} else {
+				options.listener = Http.createServer();
+			}
 		}
 
-		Option.call(this, options);
+		Utility.assign(this, options, defaults);
+
 		Tool.call(this, options.tools);
 		Route.call(this, options.routes);
+
+		this.listener.on('request', this._callback.bind(this));
 	}
 
-	callback (request, response) {
+	_callback (request, response) {
 		const self = this;
 		Promise.resolve().then(function () {
 			return self.handler(request, response);
@@ -273,26 +292,5 @@ module.exports = class Servey extends Events {
 		await self.ender(context);
 	}
 
-	async open () {
-		const self = this;
-		return new Promise(function (resolve) {
-			const options = { port: self.port, host: self.hostname };
-			self.listener.listen(options, function () {
-				Object.assign(self.information, self.listener.address());
-				resolve();
-				self.emit('open');
-			});
-		});
-	}
-
-	async close () {
-		const self = this;
-		return new Promise(function (resolve) {
-			self.listener.close(function () {
-				resolve();
-				self.emit('close');
-			});
-		});
-	}
 
 }

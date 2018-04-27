@@ -1,5 +1,6 @@
 'use strict';
 
+const Os = require('os');
 const Fs = require('fs');
 const Url = require('url');
 const Path = require('path');
@@ -10,10 +11,29 @@ const Events = require('events');
 const Stream = require('stream');
 const Buffer = require('buffer').Buffer;
 
-const Tool = require('./tool');
-const Route = require('./route');
-const Option = require('./option');
 const Utility = require('./utility');
+const BasicTool = require('./tools/basic');
+const StaticTool = require('./tools/static');
+const RedirectTool = require('./tools/redirect');
+
+const defaults = {
+	port: 0,
+	tool: {},
+	tools: [],
+	routes: [],
+	auth: null,
+	cors: false,
+	cache: true,
+	secure: null,
+	maxBytes: 1e6,
+	listener: null,
+	information: {},
+	methods: Utility.methods,
+	messages: Utility.messages,
+	hostname: Os.hostname() || 'localhost',
+	contentType: 'text/plain; charset=utf8',
+	methodsString: Utility.methods.join(',')
+};
 
 module.exports = class Servey extends Events {
 
@@ -22,20 +42,38 @@ module.exports = class Servey extends Events {
 
 		options = options || {};
 
-		if (options.listener) {
-			options.listener.on('request', this.callback.bind(this));
-		} else if (options.secure) {
-			options.listener = Https.createServer(options.secure, this.callback.bind(this));
-		} else {
-			options.listener = Http.createServer(this.callback.bind(this));
+		if (!options.listener) {
+			if (options.secure) {
+				options.listener = Https.createServer(self.secure);
+			} else {
+				options.listener = Http.createServer();
+			}
 		}
 
-		Option.call(this, options);
-		Tool.call(this, options.tools);
-		Route.call(this, options.routes);
+		Utility.assign(this, options, defaults);
+		this.tools.push(StaticTool, BasicTool, RedirectTool);
+		this._setupTools();
+		this.listener.on('request', this._callback.bind(this));
 	}
 
-	callback (request, response) {
+	_setupTools () {
+		const self = this;
+		for (let tool of self.tools) {
+			if (tool.name in self.tool) {
+				throw new Error('duplicate tool');
+			} else {
+				self.tool[tool.name] = async function () {
+					const result = await tool.method.apply(self, arguments);
+					if (typeof result !== 'object') {
+						throw new Error(`${tool.name} tool result type invalid`);
+					}
+					return result;
+				}
+			}
+		}
+	}
+
+	_callback (request, response) {
 		const self = this;
 		Promise.resolve().then(function () {
 			return self.handler(request, response);
@@ -175,8 +213,8 @@ module.exports = class Servey extends Events {
 			body: null,
 			code: null,
 			instance: self,
-			tool: self.tool,
 			credentials: null,
+			tool: self.tool,
 			method: request.method,
 			url: Url.parse(request.url)
 		};
