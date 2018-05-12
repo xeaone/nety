@@ -3,20 +3,59 @@ const Servey = require('../lib/server');
 const Path = require('path');
 const Fs = require('fs');
 const Url = require('url');
+const Jwt = require('jsonwebtoken');
+const Util = require('util');
+
+const JwtSign = Util.promisify(Jwt.sign);
 
 (async function () {
 
 	const routes = [
 		{
-			path: '/difauth',
+			path: '/token',
+			method: 'get',
+			options: {
+				auth: false
+			},
+			handler: async function (context) {
+				const token = await JwtSign({ email: 'test@mail.com' }, 'secret');
+				return {
+					body: token
+				};
+			}
+		},
+		{
+			path: '/credential',
 			method: 'get',
 			options: {
 				auth: {
-					type: 'Basic',
-					name: 'basic',
-					validate: async function (context, username, password) {
-						if (username === 'loo' && password === 'bar') {
-							return { valid: true, credentials: { username: 'loo'} };
+					strategy: 'jwt',
+					secret: 'secret',
+					validate: async function (context, credential) {
+						if (credential.email === 'test@mail.com') {
+							return { valid: true, credential };
+						} else {
+							return { valid: false, credential };
+						}
+					}
+				}
+			},
+			handler: async function (context) {
+				return {
+					body: context.credential
+				};
+			}
+		},
+		{
+			path: '/private',
+			method: 'get',
+			options: {
+				auth: {
+					type: 'basic',
+					strategy: 'basic',
+					validate: async function (context, data) {
+						if (data.username === 'loo' && data.password === 'bar') {
+							return { valid: true, credential: { username: 'loo'} };
 						} else {
 							return { valid: false };
 						}
@@ -25,28 +64,28 @@ const Url = require('url');
 			},
 			handler: async function (context) {
 				return {
-					body: 'difauth'
+					body: 'private'
 				};
 			}
 		},
 		{
-			path: '/noauth',
+			path: '/public',
 			method: 'get',
 			options: {
 				auth: false
 			},
 			handler: async function (context) {
 				return {
-					body: 'noauth'
+					body: 'public'
 				};
 			}
 		},
 		{
 			path: '*',
 			method: 'get',
-			options: {
-				vhost: ['test.com','localhost:8080'],
-			},
+			// options: {
+			// 	vhost: ['test.com','localhost:8080'],
+			// },
 			handler: async function (context) {
 				return await context.tool.static({
 					spa: true,
@@ -62,11 +101,11 @@ const Url = require('url');
 		hostname: 'localhost',
 		port: 8080,
 		auth: {
-			type: 'Basic',
-			name: 'basic',
-			validate: async function (context, username, password) {
-				if (username === 'foo' && password === 'bar') {
-					return { valid: true, credentials: { username: 'foo'} };
+			type: 'basic',
+			strategy: 'basic',
+			validate: async function (context, data) {
+				if (data.username === 'foo' && data.password === 'bar') {
+					return { valid: true, credential: { username: 'foo'} };
 				} else {
 					return { valid: false };
 				}
