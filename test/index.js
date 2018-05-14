@@ -84,9 +84,9 @@ const JwtSign = Util.promisify(Jwt.sign);
 		{
 			path: '*',
 			method: 'get',
-			// options: {
-			// 	vhost: ['test.com','localhost:8080'],
-			// },
+			options: {
+				vhost: ['localhost:8080', 'testcom.localhost:8080'],
+			},
 			handler: async function (context) {
 				return await context.tool.static({
 					spa: true,
