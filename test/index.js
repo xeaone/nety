@@ -31,6 +31,7 @@ const JwtSign = Util.promisify(Jwt.sign);
 				auth: {
 					strategy: 'jwt',
 					secret: 'secret',
+					location: 'query',
 					validate: async function (context, credential) {
 						if (credential.email === 'test@mail.com') {
 							return { valid: true, credential };
