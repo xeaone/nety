@@ -3,13 +3,17 @@
 Servey it up DOG!
 
 ## Overview
+Server module for building API and WEB applications.
 In single page application mode all request will check to see if the requested path exists on the file system.
-Otherwise it will serve the default file `index.html`.
+Otherwise it will serve the default file `index.html`. See the test directory for more advanced examples.
 
 ## Features
 - api
 - async/await
-- static files
+- static files server
+- built in auth handling
+- no external dependencies
+- plugin/tool extend-ability
 - spa/single page application
 
 ## Install

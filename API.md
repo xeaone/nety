@@ -1,4 +1,6 @@
 
+# API
+
 ### Servey: Class
 Inherits Events and returns a server instance.
 - `options: Object`

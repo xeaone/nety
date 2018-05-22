@@ -1,7 +1,7 @@
 {
 	"name": "servey",
-	"version": "3.1.0",
-	"description": "Servey | A Static & Single Page Application Server",
+	"version": "3.1.1",
+	"description": "Servey | Server Module For Building API and WEB Applications",
 	"main": "lib/server.js",
 	"bin": {
 		"servey": "bin/index.js"
