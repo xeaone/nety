@@ -3,9 +3,6 @@
 	"version": "3.1.4",
 	"description": "Servey | Server Module For Building API and WEB Applications",
 	"main": "lib/server.js",
-	"bin": {
-		"servey": "bin/index.js"
-	},
 	"engines": {
 		"node": ">=7.6.0"
 	},
