@@ -1,6 +1,6 @@
 {
 	"name": "servey",
-	"version": "3.1.7",
+	"version": "3.1.8",
 	"description": "Servey | Server Module For Building API and WEB Applications",
 	"main": "lib/server.js",
 	"engines": {
