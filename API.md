@@ -15,13 +15,18 @@ Inherits Events and returns a server instance.
 	- `routes: Array`
 		- `route: Object`
 			- `handler: AsyncFunction`
-				- `request: `
-				- `response: `
-				- `context: this`
-					- `plugin: Object`
+				- `context: Object`
+					- `body: Any`
+					- `tool: Object`
+					- `code: Number`
+					- `head: Object`
+					- `query: Object`
+					- `method: String`
 					- `url: Object` Url
-					- `path: String` Url.pathname
-					- `method: String` Request.method
+					- `credential: Object`
+					- `request: Class` Http.ServerRequest
+					- `response: Class` Http.ServerResponse
+					- `instance: Class` Servey
 - `open: AsyncFunction` Starts listening.
 - `close: AsyncFunction` Stops listening.
 - `on: Function`
