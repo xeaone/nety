@@ -12,6 +12,16 @@ const JwtSign = Util.promisify(Jwt.sign);
 
 	const routes = [
 		{
+			path: '/payload',
+			method: 'post',
+			options: {
+				auth: false
+			},
+			handler: async function (context) {
+				console.log(context.payload);
+			}
+		},
+		{
 			path: '/token',
 			method: 'get',
 			options: {
