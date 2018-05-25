@@ -12,6 +12,22 @@ const JwtSign = Util.promisify(Jwt.sign);
 
 	const routes = [
 		{
+			path: '/status/okay',
+			method: 'get',
+			options: { auth: false },
+			handler: async function (context) {
+				return context.tool.status.custom(200, 'Good To Go');
+			}
+		},
+		{
+			path: '/status/bad',
+			method: 'get',
+			options: { auth: false },
+			handler: async function (context) {
+				return context.tool.status.badData();
+			}
+		},
+		{
 			path: '/payload',
 			method: 'post',
 			options: {
