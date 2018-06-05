@@ -21,7 +21,7 @@
 
 * [`xframe`](https://en.wikipedia.org/wiki/Clickjacking)
     * `enabled` (boolean): Enable or disable `X-FRAME-OPTIONS` headers in response.
-    * `value` (string): The value for the header, e.g. DENY, SAMEORIGIN or ALLOW-FROM uri. Default value: `DENY`.
+    * `value` (string): The value for the header, e.g. DENY, SAMEORIGIN or ALLOW-FROM uri. Default value: `SAMEORIGIN`.
 
 * [`xss`](https://en.wikipedia.org/wiki/Cross-site_scripting)
     * `enabled` (boolean): Enable or disable XSS to prevent Cross Site Scripting (XSS) attacks in older IE browsers (IE8).
