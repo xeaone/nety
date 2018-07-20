@@ -10,6 +10,7 @@
     "jpg": "image/jpeg",
 	"jpeg": "image/jpeg",
     "js": "application/javascript",
+    "mjs": "application/javascript",
     "atom": "application/atom+xml",
     "rss": "application/rss+xml",
 
