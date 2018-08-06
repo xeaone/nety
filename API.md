@@ -12,6 +12,7 @@ Inherits Events and returns a server instance.
 		- `requestMethod: String` Access-Control-Request-Method
 	- `host: String` host to use (default: `0.0.0.0`)
 	- `secure: Boolean` http or https (default: `false`)
+	- `debug: Boolean` sends error message (default: `false`)
 	- `routes: Array`
 		- `route: Object`
 			- `handler: AsyncFunction`
