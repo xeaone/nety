@@ -27,5 +27,8 @@
 	"bugs": {
 		"url": "https://github.com/AlexanderElias/servey/issues"
 	},
-	"homepage": "https://github.com/AlexanderElias/servey#readme"
+	"homepage": "https://github.com/AlexanderElias/servey#readme",
+	"dependencies": {
+		"jsonwebtoken": "^8.3.0"
+	}
 }
