@@ -7,7 +7,7 @@
 		"node": ">=7.6.0"
 	},
 	"scripts": {
-		"t": "node test"
+		"t": "nodemon test/server.js"
 	},
 	"repository": {
 		"type": "git",
@@ -27,8 +27,5 @@
 	"bugs": {
 		"url": "https://github.com/AlexanderElias/servey/issues"
 	},
-	"homepage": "https://github.com/AlexanderElias/servey#readme",
-	"dependencies": {
-		"jsonwebtoken": "^8.3.0"
-	}
+	"homepage": "https://github.com/AlexanderElias/servey#readme"
 }

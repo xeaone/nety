@@ -74,11 +74,41 @@ const JwtSign = Util.promisify(Jwt.sign);
 		// 	}
 		// },
 		{
+			path: '/secure-cookie',
+			method: 'GET',
+			options: {
+				auth: {
+					secret: 'secret',
+					location: 'cookie',
+					strategy: 'session',
+					validate: async function (context, result) {
+						console.log(result);
+						if (result.decoded.email === 't@t.t') {
+							return { valid: true, credential: result.decoded };
+						} else {
+							return { valid: false };
+						}
+					}
+				}
+			},
+			handler: async function (context) {
+				return {
+					head: { 'content-type': 'text/plain;charset=utf-8' },
+					body: context.payload
+				};
+			}
+		},
+		{
 			path: '/login-cookie',
 			method: 'POST',
 			handler: async function (context) {
-				console.log(context.payload);
-				return context.payload;
+				return {
+					head: {
+						'set-cookie': 'name=value',
+						'content-type': 'text/plain;charset=utf-8'
+					},
+					body: context.payload
+				};
 			}
 		},
 		{
@@ -86,15 +116,13 @@ const JwtSign = Util.promisify(Jwt.sign);
 			method: 'GET',
 			handler: async function (context) {
 				return {
-					head: {
-						'content-type': 'text/html;charset=utf-8'
-					},
+					head: { 'content-type': 'text/html;charset=utf-8' },
 					body: `
-						<form method="POST" action="/login-cookie">
-							<input type="email" placeholder="Email" required/>
-							<input type="password" placeholder="Password" required/>
-							<input type="submit" value="Send"/>
-						</form>
+					<form method="post" action="/login-cookie">
+						<input name="email" type="text" placeholder="Email" required/>
+						<input name="password" type="text" placeholder="Password" required/>
+						<input type="submit" value="Send"/>
+					</form>
 					`
 				};
 			}
