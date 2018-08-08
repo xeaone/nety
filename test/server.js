@@ -76,22 +76,23 @@ const JwtSign = Util.promisify(Jwt.sign);
 		{
 			path: '/secure-cookie',
 			method: 'GET',
-			options: {
-				auth: {
-					secret: 'secret',
-					location: 'cookie',
-					strategy: 'session',
-					validate: async function (context, result) {
-						console.log(result);
-						if (result.decoded.email === 't@t.t') {
-							return { valid: true, credential: result.decoded };
-						} else {
-							return { valid: false };
-						}
-					}
-				}
-			},
+			// options: {
+			// 	auth: {
+			// 		secret: 'secret',
+			// 		location: 'cookie',
+			// 		strategy: 'session',
+			// 		validate: async function (context, result) {
+			// 			console.log(result);
+			// 			if (result.decoded.email === 't@t.t') {
+			// 				return { valid: true, credential: result.decoded };
+			// 			} else {
+			// 				return { valid: false };
+			// 			}
+			// 		}
+			// 	}
+			// },
 			handler: async function (context) {
+				console.log(context.request.headers);
 				return {
 					head: { 'content-type': 'text/plain;charset=utf-8' },
 					body: context.payload
@@ -103,11 +104,8 @@ const JwtSign = Util.promisify(Jwt.sign);
 			method: 'POST',
 			handler: async function (context) {
 				return {
-					head: {
-						'set-cookie': 'name=value',
-						'content-type': 'text/plain;charset=utf-8'
-					},
-					body: context.payload
+					body: context.payload,
+					cookie: { username: 't' }
 				};
 			}
 		},
