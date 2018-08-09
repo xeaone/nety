@@ -8,101 +8,138 @@ const Util = require('util');
 
 const JwtSign = Util.promisify(Jwt.sign);
 
+const EMAIL = 't@t.t';
+const SECRET = 'secret';
+
 (async function () {
 
 	const routes = [
-		// {
-		// 	path: '/status/okay',
-		// 	method: 'get',
-		// 	options: { auth: false },
-		// 	handler: async function (context) {
-		// 		return context.tool.status.custom(200, 'Good To Go');
-		// 	}
-		// },
-		// {
-		// 	path: '/status/bad',
-		// 	method: 'get',
-		// 	options: { auth: false },
-		// 	handler: async function (context) {
-		// 		return context.tool.status.badData();
-		// 	}
-		// },
-		// {
-		// 	path: '/payload',
-		// 	method: 'post',
-		// 	options: {
-		// 		auth: false
-		// 	},
-		// 	handler: async function (context) {
-		// 		console.log(context.payload);
-		// 	}
-		// },
-		// {
-		// 	path: '/token',
-		// 	method: 'get',
-		// 	options: {
-		// 		auth: false
-		// 	},
-		// 	handler: async function (context) {
-		// 		const token = await JwtSign({ email: 'test@mail.com' }, 'secret');
-		// 		return {
-		// 			body: token
-		// 		};
-		// 	}
-		// },
-		// {
-		// 	path: '/secure-cookie',
-		// 	method: 'get',
-		// 	options: {
-		// 		auth: {
-		// 			strategy: 'session',
-		// 			secret: 'secret',
-		// 			location: 'cookie',
-		// 			validate: async function (context, result) {
-		// 				if (result.decoded.email === 'test@mail.com') {
-		// 					return { valid: true, credential: result.decoded };
-		// 				} else {
-		// 					return { valid: false };
-		// 				}
-		// 			}
-		// 		}
-		// 	},
-		// 	handler: async function (context) {
-		// 		return {
-		// 			body: context.credential
-		// 		};
-		// 	}
-		// },
 		{
-			path: '/secure-cookie',
-			method: 'GET',
-			// options: {
-			// 	auth: {
-			// 		secret: 'secret',
-			// 		location: 'cookie',
-			// 		strategy: 'session',
-			// 		validate: async function (context, result) {
-			// 			console.log(result);
-			// 			if (result.decoded.email === 't@t.t') {
-			// 				return { valid: true, credential: result.decoded };
-			// 			} else {
-			// 				return { valid: false };
-			// 			}
-			// 		}
-			// 	}
-			// },
+			path: '/status/okay',
+			method: 'get',
+			options: { auth: false },
 			handler: async function (context) {
-				console.log(context.request.headers);
+				return context.tool.status.custom(200, 'Good To Go');
+			}
+		},
+		{
+			path: '/status/bad',
+			method: 'get',
+			options: { auth: false },
+			handler: async function (context) {
+				return context.tool.status.badData();
+			}
+		},
+		{
+			path: '/payload',
+			method: 'post',
+			options: {
+				auth: false
+			},
+			handler: async function (context) {
+				console.log(context.payload);
+			}
+		},
+		{
+			path: '/token',
+			method: 'get',
+			options: {
+				auth: false
+			},
+			handler: async function (context) {
+				const token = await JwtSign({ email: 'test@mail.com' }, SECRET);
 				return {
-					head: { 'content-type': 'text/plain;charset=utf-8' },
-					body: context.payload
+					body: token
 				};
 			}
 		},
 		{
-			path: '/login-cookie',
+			path: '/secure-cookie',
+			method: 'get',
+			options: {
+				auth: {
+					strategy: 'session',
+					secret: SECRET,
+					location: 'cookie',
+					validate: async function (context, result) {
+						if (result.decoded.email === 'test@mail.com') {
+							return { valid: true, credential: result.decoded };
+						} else {
+							return { valid: false };
+						}
+					}
+				}
+			},
+			handler: async function (context) {
+				return {
+					body: context.credential
+				};
+			}
+		},
+
+		{
+			path: '/secure-cookie',
+			method: 'GET',
+			options: {
+				auth: {
+					secret: SECRET,
+					location: 'query',
+					validate: async function (context, result) {
+						if (result.decoded.email === 'test@mail.com') {
+							return { valid: true, credential: result.decoded };
+						} else {
+							return { valid: false };
+						}
+					}
+				}
+			},
+			handler: async function (context) {
+				return {
+					body: context.credential
+				};
+			}
+		},
+		{
+			path: '/private',
+			method: 'get',
+			options: {
+				auth: {
+					type: 'basic',
+					strategy: 'basic',
+					validate: async function (context, data) {
+						if (data.username === 'loo' && data.password === 'bar') {
+							return { valid: true, credential: { username: 'loo'} };
+						} else {
+							return { valid: false };
+						}
+					}
+				}
+			},
+			handler: async function (context) {
+				return {
+					body: 'private'
+				};
+			}
+		},
+		{
+			path: '/public',
+			method: 'get',
+			options: {
+				auth: false
+			},
+			handler: async function (context) {
+				return {
+					body: 'public'
+				};
+			}
+		},
+		{
+			path: '/sign-in',
 			method: 'POST',
 			handler: async function (context) {
+				if (context.payload.type === 'jwt') {
+					const token = await JwtSign({ email: 'test@mail.com' }, SECRET);
+				}
 				return {
 					body: context.payload,
 					cookie: { username: 't' }
@@ -110,92 +147,40 @@ const JwtSign = Util.promisify(Jwt.sign);
 			}
 		},
 		{
-			path: '/login-cookie',
+			path: '/sign-in',
 			method: 'GET',
 			handler: async function (context) {
 				return {
-					head: { 'content-type': 'text/html;charset=utf-8' },
+					head: {
+						'content-type': 'text/html;charset=utf-8'
+					},
 					body: `
-					<form method="post" action="/login-cookie">
-						<input name="email" type="text" placeholder="Email" required/>
-						<input name="password" type="text" placeholder="Password" required/>
-						<input type="submit" value="Send"/>
-					</form>
+						<h1>Sign In</h1>
+						<form method="post" action="/sign-in">
+							<input name="email" type="text" placeholder="Email" required>
+							<input name="password" type="text" placeholder="Password" required>
+							<input name="type" type="radio" value="cookie">Cookie <br>
+							<input name="type" type="radio" value="jwt">Jwt <br>
+							<input type="submit" value="Send"/>
+						</form>
 					`
 				};
 			}
 		},
-		// {
-		// 	path: '/credential',
-		// 	method: 'get',
-		// 	options: {
-		// 		auth: {
-		// 			strategy: 'jwt',
-		// 			secret: 'secret',
-		// 			location: 'query',
-		// 			validate: async function (context, result) {
-		// 				if (result.decoded.email === 'test@mail.com') {
-		// 					return { valid: true, credential: result.decoded };
-		// 				} else {
-		// 					return { valid: false };
-		// 				}
-		// 			}
-		// 		}
-		// 	},
-		// 	handler: async function (context) {
-		// 		return {
-		// 			body: context.credential
-		// 		};
-		// 	}
-		// },
-		// {
-		// 	path: '/private',
-		// 	method: 'get',
-		// 	options: {
-		// 		auth: {
-		// 			type: 'basic',
-		// 			strategy: 'basic',
-		// 			validate: async function (context, data) {
-		// 				if (data.username === 'loo' && data.password === 'bar') {
-		// 					return { valid: true, credential: { username: 'loo'} };
-		// 				} else {
-		// 					return { valid: false };
-		// 				}
-		// 			}
-		// 		}
-		// 	},
-		// 	handler: async function (context) {
-		// 		return {
-		// 			body: 'private'
-		// 		};
-		// 	}
-		// },
-		// {
-		// 	path: '/public',
-		// 	method: 'get',
-		// 	options: {
-		// 		auth: false
-		// 	},
-		// 	handler: async function (context) {
-		// 		return {
-		// 			body: 'public'
-		// 		};
-		// 	}
-		// },
-		// {
-		// 	path: '*',
-		// 	method: 'get',
-		// 	options: {
-		// 		vhost: ['localhost:8080', 'testcom.localhost:8080'],
-		// 	},
-		// 	handler: async function (context) {
-		// 		return await context.tool.static({
-		// 			spa: true,
-		// 			folder: './test/static',
-		// 			path: context.url.pathname
-		// 		});
-		// 	}
-		// }
+		{
+			path: '*',
+			method: 'get',
+			options: {
+				vhost: ['localhost:8080', 'testcom.localhost:8080'],
+			},
+			handler: async function (context) {
+				return await context.tool.static({
+					spa: true,
+					folder: './test/static',
+					path: context.url.pathname
+				});
+			}
+		}
 	];
 
 	const server = new Servey({
