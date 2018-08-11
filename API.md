@@ -4,6 +4,7 @@
 ### Servey: Class
 Inherits Events and returns a server instance.
 - `options: Object`
+	- `tools: Array` A list of tools that will be available in the handlers.
 	- `port: Number` port to use (default: `0`)
 	- `cors: Boolean, Object` cors mode (defaults: `false`)
 		- `origin: String` Access-Control-Allow-Origin
@@ -15,6 +16,10 @@ Inherits Events and returns a server instance.
 	- `debug: Boolean` sends error message (default: `false`)
 	- `routes: Array`
 		- `route: Object`
+			- `options: Object`
+				- `auth: Object`
+					- `type: String` Cookie or any HTTP Authorization header such as Basic or Bearer.
+					- `strategy: String, Function` A name to a `Servey.tool` property. Must return an Object with a `valid: Boolean` and `credential: Object` property.
 			- `handler: AsyncFunction`
 				- `context: Object`
 					- `body: Any`

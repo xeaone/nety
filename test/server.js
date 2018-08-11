@@ -3,66 +3,68 @@ const Servey = require('../lib/server');
 const Path = require('path');
 const Fs = require('fs');
 const Url = require('url');
-const Jwt = require('jsonwebtoken');
 const Util = require('util');
+const Toked = require('toked');
+const Jwt = require('jsonwebtoken');
 
 const JwtSign = Util.promisify(Jwt.sign);
 
+const USERNAME = 't';
+const PASSWORD = 't';
 const EMAIL = 't@t.t';
 const SECRET = 'secret';
 
 (async function () {
 
 	const routes = [
+		// {
+		// 	path: '/status/okay',
+		// 	method: 'get',
+		// 	options: { auth: false },
+		// 	handler: async function (context) {
+		// 		return context.tool.status.custom(200, 'Good To Go');
+		// 	}
+		// },
+		// {
+		// 	path: '/status/bad',
+		// 	method: 'get',
+		// 	options: { auth: false },
+		// 	handler: async function (context) {
+		// 		return context.tool.status.badData();
+		// 	}
+		// },
+		// {
+		// 	path: '/payload',
+		// 	method: 'post',
+		// 	options: {
+		// 		auth: false
+		// 	},
+		// 	handler: async function (context) {
+		// 		console.log(context.payload);
+		// 	}
+		// },
+		// {
+		// 	path: '/public',
+		// 	method: 'get',
+		// 	options: {
+		// 		auth: false
+		// 	},
+		// 	handler: async function (context) {
+		// 		return {
+		// 			body: 'public'
+		// 		};
+		// 	}
+		// },
 		{
-			path: '/status/okay',
-			method: 'get',
-			options: { auth: false },
-			handler: async function (context) {
-				return context.tool.status.custom(200, 'Good To Go');
-			}
-		},
-		{
-			path: '/status/bad',
-			method: 'get',
-			options: { auth: false },
-			handler: async function (context) {
-				return context.tool.status.badData();
-			}
-		},
-		{
-			path: '/payload',
-			method: 'post',
-			options: {
-				auth: false
-			},
-			handler: async function (context) {
-				console.log(context.payload);
-			}
-		},
-		{
-			path: '/token',
-			method: 'get',
-			options: {
-				auth: false
-			},
-			handler: async function (context) {
-				const token = await JwtSign({ email: 'test@mail.com' }, SECRET);
-				return {
-					body: token
-				};
-			}
-		},
-		{
-			path: '/secure-cookie',
+			path: '/jwt-cookie',
 			method: 'get',
 			options: {
 				auth: {
-					strategy: 'session',
 					secret: SECRET,
-					location: 'cookie',
+					type: 'cookie',
+					strategy: 'jwt',
 					validate: async function (context, result) {
-						if (result.decoded.email === 'test@mail.com') {
+						if (result.decoded.username === USERNAME) {
 							return { valid: true, credential: result.decoded };
 						} else {
 							return { valid: false };
@@ -76,39 +78,36 @@ const SECRET = 'secret';
 				};
 			}
 		},
-
+		// {
+		// 	path: '/cookie',
+		// 	method: 'get',
+		// 	options: {
+		// 		auth: {
+		// 			type: 'cookie',
+		// 			validate: async function (context, result) {
+		// 				if (result.decoded.email === 't@t.t') {
+		// 					return { valid: true, credential: result.decoded };
+		// 				} else {
+		// 					return { valid: false };
+		// 				}
+		// 			}
+		// 		}
+		// 	},
+		// 	handler: async function (context) {
+		// 		return {
+		// 			body: context.credential
+		// 		};
+		// 	}
+		// },
 		{
-			path: '/secure-cookie',
-			method: 'GET',
-			options: {
-				auth: {
-					secret: SECRET,
-					location: 'query',
-					validate: async function (context, result) {
-						if (result.decoded.email === 'test@mail.com') {
-							return { valid: true, credential: result.decoded };
-						} else {
-							return { valid: false };
-						}
-					}
-				}
-			},
-			handler: async function (context) {
-				return {
-					body: context.credential
-				};
-			}
-		},
-		{
-			path: '/private',
+			path: '/basic',
 			method: 'get',
 			options: {
 				auth: {
 					type: 'basic',
-					strategy: 'basic',
-					validate: async function (context, data) {
-						if (data.username === 'loo' && data.password === 'bar') {
-							return { valid: true, credential: { username: 'loo'} };
+					validate: async function (context, credential) {
+						if (credential.username === 't' && credential.password === 't') {
+							return { valid: true, credential: { username: credential.username } };
 						} else {
 							return { valid: false };
 						}
@@ -117,19 +116,7 @@ const SECRET = 'secret';
 			},
 			handler: async function (context) {
 				return {
-					body: 'private'
-				};
-			}
-		},
-		{
-			path: '/public',
-			method: 'get',
-			options: {
-				auth: false
-			},
-			handler: async function (context) {
-				return {
-					body: 'public'
+					body: 'basic'
 				};
 			}
 		},
@@ -137,12 +124,22 @@ const SECRET = 'secret';
 			path: '/sign-in',
 			method: 'POST',
 			handler: async function (context) {
+				let cookie;
+
 				if (context.payload.type === 'jwt') {
-					const token = await JwtSign({ email: 'test@mail.com' }, SECRET);
+					cookie = await JwtSign({ username: USERNAME }, SECRET);
+				} else {
+					cookie = { username: USERNAME };
 				}
+
 				return {
-					body: context.payload,
-					cookie: { username: 't' }
+					head: {
+						'set-cookie': cookie
+					},
+					body: {
+						cookie: cookie,
+						payload: context.payload
+					}
 				};
 			}
 		},
@@ -157,10 +154,10 @@ const SECRET = 'secret';
 					body: `
 						<h1>Sign In</h1>
 						<form method="post" action="/sign-in">
-							<input name="email" type="text" placeholder="Email" required>
-							<input name="password" type="text" placeholder="Password" required>
-							<input name="type" type="radio" value="cookie">Cookie <br>
-							<input name="type" type="radio" value="jwt">Jwt <br>
+							<input name="username" type="text" placeholder="Username" required><br>
+							<input name="password" type="text" placeholder="Password" required><br>
+							<input name="type" type="radio" value="cookie" checked>Cookie<br>
+							<input name="type" type="radio" value="jwt">Jwt<br>
 							<input type="submit" value="Send"/>
 						</form>
 					`
@@ -188,9 +185,12 @@ const SECRET = 'secret';
 		debug: true,
 		cache: false,
 		hostname: 'localhost',
+		tools: [
+			Toked
+		],
 		// auth: {
 		// 	type: 'basic',
-		// 	strategy: 'basic',
+		// 	type: 'basic',
 		// 	validate: async function (context, data) {
 		// 		if (data.username === 'foo' && data.password === 'bar') {
 		// 			return { valid: true, credential: { username: 'foo'} };
@@ -206,8 +206,8 @@ const SECRET = 'secret';
 		console.error(error);
 	});
 
-	server.on('request', function (req) {
-		// console.log(req.url);
+	server.on('request', function (request) {
+		console.log(request.url);
 	});
 
 	server.on('open', function () {

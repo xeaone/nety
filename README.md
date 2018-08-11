@@ -1,6 +1,6 @@
 
 # Servey
-Servey it up DOG!
+A configuration based async/await server.
 
 ## Overview
 Server module for building API and WEB applications.
@@ -63,6 +63,9 @@ Otherwise it will serve the default file `index.html`. See the test directory fo
 
 	await server.open();
 ```
+
+## Tools
+- [Toked](https://www.npmjs.com/package/toked) a Jwt auth tool.
 
 ## Authors
 [AlexanderElias](https://github.com/AlexanderElias)
