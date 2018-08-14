@@ -18,7 +18,8 @@ Inherits Events and returns a server instance.
 		- `route: Object`
 			- `options: Object`
 				- `auth: Object`
-					- `type: String` Cookie or any HTTP Authorization header such as Basic or Bearer.
+					- `type: String` Cookie or any HTTP Authorization header such as Basic or Bearer. Basic auth does not require a strategy it is built in.
+					- `validate: String, Function`  A name to a `Servey.tool` property. Must return an Object with a `valid: Boolean` and `credential: Object` property.
 					- `strategy: String, Function` A name to a `Servey.tool` property. Must return an Object with a `valid: Boolean` and `credential: Object` property.
 			- `handler: AsyncFunction`
 				- `context: Object`

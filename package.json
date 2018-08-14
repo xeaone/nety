@@ -29,7 +29,6 @@
 	},
 	"homepage": "https://github.com/AlexanderElias/servey#readme",
 	"devDependencies": {
-		"nodemon": "^1.18.3",
 		"toked": "^1.0.1"
 	}
 }

@@ -56,13 +56,16 @@ const SECRET = 'secret';
 		// 	}
 		// },
 		{
-			path: '/jwt-cookie',
+			path: '/session',
 			method: 'get',
 			options: {
 				auth: {
 					secret: SECRET,
 					type: 'cookie',
-					strategy: 'jwt',
+					strategy: async function () {
+
+						return {  };
+					},
 					validate: async function (context, result) {
 						if (result.decoded.username === USERNAME) {
 							return { valid: true, credential: result.decoded };
@@ -78,27 +81,30 @@ const SECRET = 'secret';
 				};
 			}
 		},
-		// {
-		// 	path: '/cookie',
-		// 	method: 'get',
-		// 	options: {
-		// 		auth: {
-		// 			type: 'cookie',
-		// 			validate: async function (context, result) {
-		// 				if (result.decoded.email === 't@t.t') {
-		// 					return { valid: true, credential: result.decoded };
-		// 				} else {
-		// 					return { valid: false };
-		// 				}
-		// 			}
-		// 		}
-		// 	},
-		// 	handler: async function (context) {
-		// 		return {
-		// 			body: context.credential
-		// 		};
-		// 	}
-		// },
+		{
+			path: '/cookie',
+			method: 'get',
+			options: {
+				auth: {
+					secret: SECRET,
+					type: 'cookie',
+					strategy: 'jwt',
+					// strategy: Toked.value,
+					validate: async function (context, result) {
+						if (result.decoded.username === USERNAME) {
+							return { valid: true, credential: result.decoded };
+						} else {
+							return { valid: false };
+						}
+					}
+				}
+			},
+			handler: async function (context) {
+				return {
+					body: context.credential
+				};
+			}
+		},
 		{
 			path: '/basic',
 			method: 'get',
@@ -122,31 +128,35 @@ const SECRET = 'secret';
 		},
 		{
 			path: '/sign-in',
-			method: 'POST',
+			method: ['get','post'],
 			handler: async function (context) {
-				let cookie;
 
-				if (context.payload.type === 'jwt') {
-					cookie = await JwtSign({ username: USERNAME }, SECRET);
-				} else {
-					cookie = { username: USERNAME };
+				if (context.method === 'POST') {
+					let cookie;
+
+					if (context.payload.username !== USERNAME || context.payload.password !== PASSWORD) {
+						return context.tool.status.unauthorized();
+					}
+
+					if (context.payload.type === 'jwt') {
+						cookie = await JwtSign({ username: USERNAME }, SECRET);
+					}
+
+					if (context.payload.type === 'session') {
+						context.tools.session.create({ username: USERNAME });
+					}
+
+					return {
+						head: {
+							'set-cookie': cookie
+						},
+						body: {
+							cookie: cookie,
+							payload: context.payload
+						}
+					};
 				}
 
-				return {
-					head: {
-						'set-cookie': cookie
-					},
-					body: {
-						cookie: cookie,
-						payload: context.payload
-					}
-				};
-			}
-		},
-		{
-			path: '/sign-in',
-			method: 'GET',
-			handler: async function (context) {
 				return {
 					head: {
 						'content-type': 'text/html;charset=utf-8'
@@ -156,8 +166,6 @@ const SECRET = 'secret';
 						<form method="post" action="/sign-in">
 							<input name="username" type="text" placeholder="Username" required><br>
 							<input name="password" type="text" placeholder="Password" required><br>
-							<input name="type" type="radio" value="cookie" checked>Cookie<br>
-							<input name="type" type="radio" value="jwt">Jwt<br>
 							<input type="submit" value="Send"/>
 						</form>
 					`
