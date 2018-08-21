@@ -143,7 +143,6 @@ const SECRET = 'secret';
 							cookie = await JwtSign({ username: USERNAME }, SECRET);
 							break;
 						case 'session':
-							
 							// context.tools.session.create({ username: USERNAME });
 							break;
 					}
