@@ -62,9 +62,9 @@ const SECRET = 'secret';
 				auth: {
 					secret: SECRET,
 					type: 'cookie',
-					strategy: async function () {
-
-						return {  };
+					strategy: async function (context, token, auth) {
+						console.log(token);
+						console.log(auth);
 					},
 					validate: async function (context, result) {
 						if (result.decoded.username === USERNAME) {
@@ -138,12 +138,14 @@ const SECRET = 'secret';
 						return context.tool.status.unauthorized();
 					}
 
-					if (context.payload.type === 'jwt') {
-						cookie = await JwtSign({ username: USERNAME }, SECRET);
-					}
-
-					if (context.payload.type === 'session') {
-						context.tools.session.create({ username: USERNAME });
+					switch (context.payload.type) {
+						case 'jwt':
+							cookie = await JwtSign({ username: USERNAME }, SECRET);
+							break;
+						case 'session':
+							
+							// context.tools.session.create({ username: USERNAME });
+							break;
 					}
 
 					return {
@@ -166,6 +168,8 @@ const SECRET = 'secret';
 						<form method="post" action="/sign-in">
 							<input name="username" type="text" placeholder="Username" required><br>
 							<input name="password" type="text" placeholder="Password" required><br>
+							<input name="type" type="radio" value="session" required>Session<br>
+							<input name="type" type="radio" value="jwt" required>JWT<br>
 							<input type="submit" value="Send"/>
 						</form>
 					`
