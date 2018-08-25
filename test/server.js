@@ -88,11 +88,11 @@ const SECRET = 'secret';
 				auth: {
 					secret: SECRET,
 					type: 'cookie',
-					strategy: 'jwt',
+					// strategy: 'jwt',
 					// strategy: Toked.value,
-					validate: async function (context, result) {
-						if (result.decoded.username === USERNAME) {
-							return { valid: true, credential: result.decoded };
+					validate: async function (context, credential) {
+						if (credential.decoded.username === USERNAME) {
+							return { valid: true, credential: credential.decoded };
 						} else {
 							return { valid: false };
 						}
@@ -143,14 +143,11 @@ const SECRET = 'secret';
 							cookie = await JwtSign({ username: USERNAME }, SECRET);
 							break;
 						case 'cookie':
-							context.tools.cookie.create({ username: USERNAME });
+							cookie = context.tool.cookie.set({ username: USERNAME });
 							break;
 					}
 
 					return {
-						head: {
-							'set-cookie': cookie
-						},
 						body: {
 							cookie: cookie,
 							payload: context.payload
@@ -167,7 +164,7 @@ const SECRET = 'secret';
 						<form method="post" action="/sign-in">
 							<input name="username" type="text" placeholder="Username" required><br>
 							<input name="password" type="text" placeholder="Password" required><br>
-							<input name="type" type="radio" value="session" required>Session<br>
+							<input name="type" type="radio" value="cookie" required>Cookie<br>
 							<input name="type" type="radio" value="jwt" required>JWT<br>
 							<input type="submit" value="Send"/>
 						</form>
@@ -214,6 +211,7 @@ const SECRET = 'secret';
 	});
 
 	server.on('error', function (error) {
+		console.log('here');
 		console.error(error);
 	});
 
@@ -237,6 +235,4 @@ const SECRET = 'secret';
 	// 	await server.close();
 	// }, 3000);
 
-}()).catch(function (error) {
-	console.error(error);
-});
+}()).catch(console.error);
