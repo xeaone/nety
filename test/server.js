@@ -1,11 +1,12 @@
+'use strict';
 
-const Servey = require('../lib/server');
-const Path = require('path');
 const Fs = require('fs');
 const Url = require('url');
 const Util = require('util');
+const Path = require('path');
 const Toked = require('toked');
 const Jwt = require('jsonwebtoken');
+const Servey = require('../lib/server');
 
 const JwtSign = Util.promisify(Jwt.sign);
 
@@ -17,55 +18,23 @@ const SECRET = 'secret';
 (async function () {
 
 	const routes = [
-		// {
-		// 	path: '/status/okay',
-		// 	method: 'get',
-		// 	options: { auth: false },
-		// 	handler: async function (context) {
-		// 		return context.tool.status.custom(200, 'Good To Go');
-		// 	}
-		// },
-		// {
-		// 	path: '/status/bad',
-		// 	method: 'get',
-		// 	options: { auth: false },
-		// 	handler: async function (context) {
-		// 		return context.tool.status.badData();
-		// 	}
-		// },
-		// {
-		// 	path: '/payload',
-		// 	method: 'post',
-		// 	options: {
-		// 		auth: false
-		// 	},
-		// 	handler: async function (context) {
-		// 		console.log(context.payload);
-		// 	}
-		// },
-		// {
-		// 	path: '/public',
-		// 	method: 'get',
-		// 	options: {
-		// 		auth: false
-		// 	},
-		// 	handler: async function (context) {
-		// 		return {
-		// 			body: 'public'
-		// 		};
-		// 	}
-		// },
 		{
-			path: '/session',
+			path: '/payload',
+			method: 'post',
+			options: {
+				auth: false
+			},
+			handler: async function (context) {
+				console.log(context.payload);
+			}
+		},
+		{
+			path: '/jwt',
 			method: 'get',
 			options: {
 				auth: {
+					type: 'jwt',
 					secret: SECRET,
-					type: 'cookie',
-					strategy: async function (context, token, auth) {
-						console.log(token);
-						console.log(auth);
-					},
 					validate: async function (context, result) {
 						if (result.decoded.username === USERNAME) {
 							return { valid: true, credential: result.decoded };
@@ -88,9 +57,8 @@ const SECRET = 'secret';
 				auth: {
 					secret: SECRET,
 					type: 'cookie',
-					// strategy: 'jwt',
-					// strategy: Toked.value,
 					validate: async function (context, credential) {
+						console.log(credential);
 						if (credential.decoded.username === USERNAME) {
 							return { valid: true, credential: credential.decoded };
 						} else {
@@ -112,7 +80,7 @@ const SECRET = 'secret';
 				auth: {
 					type: 'basic',
 					validate: async function (context, credential) {
-						if (credential.username === 't' && credential.password === 't') {
+						if (credential.username === USERNAME && credential.password === PASSWORD) {
 							return { valid: true, credential: { username: credential.username } };
 						} else {
 							return { valid: false };
@@ -143,7 +111,7 @@ const SECRET = 'secret';
 							cookie = await JwtSign({ username: USERNAME }, SECRET);
 							break;
 						case 'cookie':
-							cookie = context.tool.cookie.set({ username: USERNAME });
+							cookie = await context.tool.cookie.set(context, { username: USERNAME }, SECRET);
 							break;
 					}
 
@@ -196,6 +164,14 @@ const SECRET = 'secret';
 		tools: [
 			Toked
 		],
+		routes: routes,
+
+		// tool: {
+		// 	cookie: {
+		// 		secret: SECRET
+		// 	}
+		// },
+
 		// auth: {
 		// 	type: 'basic',
 		// 	type: 'basic',
@@ -206,8 +182,7 @@ const SECRET = 'secret';
 		// 			return { valid: false };
 		// 		}
 		// 	}
-		// },
-		routes: routes
+		// }
 	});
 
 	server.on('error', function (error) {
