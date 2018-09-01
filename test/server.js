@@ -29,18 +29,14 @@ const SECRET = 'secret';
 			}
 		},
 		{
-			path: '/jwt',
+			path: '/toked',
 			method: 'get',
 			options: {
 				auth: {
-					type: 'jwt',
+					type: 'toked',
 					secret: SECRET,
-					validate: async function (context, result) {
-						if (result.decoded.username === USERNAME) {
-							return { valid: true, credential: result.decoded };
-						} else {
-							return { valid: false };
-						}
+					validate: async function (context, credential) {
+						return { valid: true, credential };
 					}
 				}
 			},
@@ -51,16 +47,16 @@ const SECRET = 'secret';
 			}
 		},
 		{
-			path: '/cookie',
+			path: '/session',
 			method: 'get',
 			options: {
 				auth: {
 					secret: SECRET,
-					type: 'cookie',
+					type: 'session',
 					validate: async function (context, credential) {
-						console.log(credential);
-						if (credential.decoded.username === USERNAME) {
-							return { valid: true, credential: credential.decoded };
+						const user = await context.tool.session.get(credential.decoded);
+						if (user) {
+							return { valid: true, credential: user };
 						} else {
 							return { valid: false };
 						}
@@ -80,8 +76,8 @@ const SECRET = 'secret';
 				auth: {
 					type: 'basic',
 					validate: async function (context, credential) {
-						if (credential.username === USERNAME && credential.password === PASSWORD) {
-							return { valid: true, credential: { username: credential.username } };
+						if (credential.decoded.username === USERNAME && credential.decoded.password === PASSWORD) {
+							return { valid: true, credential: { username: credential.decoded.username } };
 						} else {
 							return { valid: false };
 						}
@@ -98,22 +94,17 @@ const SECRET = 'secret';
 			path: '/sign-in',
 			method: ['get','post'],
 			handler: async function (context) {
+				const head = {};
 
 				if (context.method === 'POST') {
-					let cookie;
 
 					if (context.payload.username !== USERNAME || context.payload.password !== PASSWORD) {
 						return context.tool.status.unauthorized();
 					}
 
-					switch (context.payload.type) {
-						case 'jwt':
-							cookie = await JwtSign({ username: USERNAME }, SECRET);
-							break;
-						case 'cookie':
-							cookie = await context.tool.cookie.set(context, { username: USERNAME }, SECRET);
-							break;
-					}
+					const cookie = await context.tool[context.payload.type].create({ username: USERNAME }, SECRET);
+
+					context.tool.head.cookie(context, cookie);
 
 					return {
 						body: {
@@ -123,17 +114,17 @@ const SECRET = 'secret';
 					};
 				}
 
+				head['content-type'] = 'text/html;charset=utf-8';
+
 				return {
-					head: {
-						'content-type': 'text/html;charset=utf-8'
-					},
+					head,
 					body: `
 						<h1>Sign In</h1>
 						<form method="post" action="/sign-in">
 							<input name="username" type="text" placeholder="Username" required><br>
 							<input name="password" type="text" placeholder="Password" required><br>
-							<input name="type" type="radio" value="cookie" required>Cookie<br>
-							<input name="type" type="radio" value="jwt" required>JWT<br>
+							<input name="type" type="radio" value="session" required>Session<br>
+							<input name="type" type="radio" value="toked" required>Toked<br>
 							<input type="submit" value="Send"/>
 						</form>
 					`
