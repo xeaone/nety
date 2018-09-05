@@ -1,6 +1,6 @@
 {
 	"name": "servey",
-	"version": "4.0.0",
+	"version": "4.0.1",
 	"description": "Servey | A configuration based async/await server",
 	"main": "lib/server.js",
 	"engines": {
