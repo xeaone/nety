@@ -15,6 +15,7 @@ Otherwise it will serve the default file `index.html`. See the test directory fo
 - no external dependencies
 - plugin/tool extend-ability
 - spa/single page application
+	- redirects all urls with out extensions and wih .html to the root file
 
 ## Install
 `npm i servey --save`
