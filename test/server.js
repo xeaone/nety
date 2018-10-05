@@ -51,8 +51,8 @@ const SECRET = 'secret';
 			method: 'get',
 			options: {
 				auth: {
-					secret: SECRET,
 					type: 'session',
+					secret: SECRET,
 					validate: async function (context, credential) {
 						const user = await context.tool.session.get(credential.decoded);
 						if (user) {
