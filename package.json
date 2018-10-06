@@ -29,7 +29,7 @@
 	},
 	"homepage": "https://github.com/AlexanderElias/servey#readme",
 	"devDependencies": {
-		"toked": "^1.1.2"
+		"toked": "^1.2.0"
 	},
 	"dependencies": {}
 }
