@@ -18,9 +18,14 @@ Inherits Events and returns a server instance.
 		- `route: Object`
 			- `options: Object`
 				- `auth: Object`
-					- `type: String` Cookie or any HTTP Authorization header such as Basic or Bearer. Basic auth does not require a strategy it is built in.
-					- `validate: String, Function`  A name to a `Servey.tool` property. Must return an Object with a `valid: Boolean` and `credential: Object` property.
-					- `strategy: String, Function` A name to a `Servey.tool` property. Must return an Object with a `valid: Boolean` and `credential: Object` property.
+					- `tool: String` A `Servey.tool` requires the following properties to be available.
+						- `toked` Third party tool for jwt tokens.
+						- `basic` Builtin tool for basic auth.
+						- `session` Builtin tool for session auth.
+					- `realm: String` The value for the WWW-Authentication realm header. This will override the `tool` option.
+					- `scheme: String` Cookie or any HTTP Authorization header such as Basic or Bearer. This will override the `tool` option.
+					- `validate: String, Function`  A name to a `Servey.tool`. Must return an Object with a `valid: Boolean` and `credential: Object` property. This will override the `tool` option.
+					- `strategy: String, Function` A name to a `Servey.tool`. Must return an Object with a `valid: Boolean` and `credential: Object` property. This will override the `tool` option.
 			- `handler: AsyncFunction`
 				- `context: Object`
 					- `body: Any`
@@ -43,8 +48,8 @@ Inherits Events and returns a server instance.
 	- `request: Event`
 	- `response: Event`
 
-### Servey.plugins: Array
-Default server plugin.
+### Servey.tools: Array
+Default server tools.
 - `static` Static file and single page application.
 	- `spa: Boolean` spa mode (defaults: `false`)
 	- `folder: String` path to (defaults: `./public`)

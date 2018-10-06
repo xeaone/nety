@@ -33,8 +33,9 @@ const SECRET = 'secret';
 			method: 'get',
 			options: {
 				auth: {
-					type: 'toked',
 					secret: SECRET,
+					tool: 'toked',
+					scheme: 'cookie',
 					validate: async function (context, credential) {
 						return { valid: true, credential };
 					}
@@ -51,8 +52,8 @@ const SECRET = 'secret';
 			method: 'get',
 			options: {
 				auth: {
-					type: 'session',
 					secret: SECRET,
+					tool: 'session',
 					validate: async function (context, credential) {
 						const user = await context.tool.session.get(credential.decoded);
 						if (user) {
@@ -74,7 +75,7 @@ const SECRET = 'secret';
 			method: 'get',
 			options: {
 				auth: {
-					type: 'basic',
+					tool: 'basic',
 					validate: async function (context, credential) {
 						if (credential.decoded.username === USERNAME && credential.decoded.password === PASSWORD) {
 							return { valid: true, credential: { username: credential.decoded.username } };
@@ -102,7 +103,9 @@ const SECRET = 'secret';
 						return context.tool.status.unauthorized();
 					}
 
-					const cookie = await context.tool[context.payload.type].create({ username: USERNAME }, SECRET);
+					const exp = Math.floor(Date.now() / 1000) + 60;
+
+					const cookie = await context.tool[context.payload.type].create({ exp, username: USERNAME }, SECRET);
 
 					context.tool.head.cookie(context, cookie);
 
@@ -177,7 +180,6 @@ const SECRET = 'secret';
 	});
 
 	server.on('error', function (error) {
-		console.log('here');
 		console.error(error);
 	});
 
