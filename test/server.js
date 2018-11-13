@@ -159,6 +159,16 @@ const SECRET = 'secret';
 			Toked
 		],
 		routes: routes,
+		event: {
+			handler: {
+				before () {
+					console.log('before');
+				},
+				after () {
+					console.log('after');
+				}
+			}
+		}
 
 		// tool: {
 		// 	cookie: {
