@@ -1,11 +1,13 @@
 
 # Servey
-A configuration based async/await server.
+A configuration based async/await server. Server module for building API, SPA, and WEB applications.
 
 ## Overview
-Server module for building API and WEB applications.
-In single page application mode all request will check to see if the requested path exists on the file system.
+Single page application mode all request will check to see if the requested path exists on the file system.
 Otherwise it will serve the default file `index.html`. See the test directory for more advanced examples.
+
+## API
+Api documentation can be found at [API.md](https://github.com/AlexanderElias/servey/blob/master/API.md)
 
 ## Features
 - api
