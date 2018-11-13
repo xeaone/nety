@@ -14,6 +14,10 @@ Inherits Events and returns a server instance.
 	- `host: String` host to use (default: `0.0.0.0`)
 	- `secure: Boolean` http or https (default: `false`)
 	- `debug: Boolean` sends error message (default: `false`)
+	- `event: Object`
+		- `handler: Object, AsyncFunction` if function it will be a invoked before and after
+			- `before: AsyncFunction` invoked before the handler
+			- `after: AsyncFunction` invoked after the handler
 	- `routes: Array`
 		- `route: Object`
 			- `options: Object`
