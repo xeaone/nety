@@ -34,7 +34,7 @@ Inherits Events and returns a server instance.
 				- `context: Object`
 					- `body: Any`
 					- `tool: Object`
-					- `code: Number`
+					- `code: Number` (default: 200)
 					- `head: Object`
 					- `query: Object`
 					- `method: String`
