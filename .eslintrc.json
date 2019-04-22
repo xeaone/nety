@@ -6,7 +6,6 @@
     },
     "extends": "eslint:recommended",
     "globals": {
-        "Oxe": "readonly",
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly"
     },
