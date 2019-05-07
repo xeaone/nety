@@ -4,7 +4,7 @@
 // const Url = require('url');
 // const Util = require('util');
 // const Path = require('path');
-const Toked = require('toked');
+// const Toked = require('toked');
 // const Jwt = require('jsonwebtoken');
 const Servey = require('../lib/server');
 
@@ -28,25 +28,25 @@ const SECRET = 'secret';
                 console.log(context.payload);
             }
         },
-        {
-            path: '/toked',
-            method: 'get',
-            options: {
-                auth: {
-                    secret: SECRET,
-                    tool: 'toked',
-                    scheme: 'cookie',
-                    validate: async function (context, credential) {
-                        return { valid: true, credential };
-                    }
-                }
-            },
-            handler: async function (context) {
-                return {
-                    body: context.credential
-                };
-            }
-        },
+        // {
+        //     path: '/toked',
+        //     method: 'get',
+        //     options: {
+        //         auth: {
+        //             secret: SECRET,
+        //             tool: 'toked',
+        //             scheme: 'cookie',
+        //             validate: async function (context, credential) {
+        //                 return { valid: true, credential };
+        //             }
+        //         }
+        //     },
+        //     handler: async function (context) {
+        //         return {
+        //             body: context.credential
+        //         };
+        //     }
+        // },
         {
             path: '/session',
             method: 'get',
@@ -143,7 +143,7 @@ const SECRET = 'secret';
             handler: async function (context) {
                 return await context.tool.static({
                     spa: true,
-                    folder: './test/static',
+                    folder: './tst/static',
                     path: context.url.pathname
                 });
             }
@@ -155,9 +155,14 @@ const SECRET = 'secret';
         debug: true,
         cache: false,
         hostname: 'localhost',
-        tools: [
-            Toked
-        ],
+        // tools: [
+        //     Toked
+        // ],
+        tool: {
+            cookie: {
+                secret: SECRET
+            }
+        },
         routes: routes,
         event: {
             handler: {
@@ -169,13 +174,6 @@ const SECRET = 'secret';
                 }
             }
         }
-
-        // tool: {
-        // 	cookie: {
-        // 		secret: SECRET
-        // 	}
-        // },
-
         // auth: {
         // 	type: 'basic',
         // 	type: 'basic',
@@ -193,8 +191,8 @@ const SECRET = 'secret';
         console.error(error);
     });
 
-    server.on('request', function (request) {
-        console.log(request.url);
+    server.on('request', function () {
+        console.log('request');
     });
 
     server.on('open', function () {
@@ -208,9 +206,5 @@ const SECRET = 'secret';
     await server.open();
 
     console.log(server.port);
-
-    // setTimeout(async function () {
-    // 	await server.close();
-    // }, 3000);
 
 }()).catch(console.error);

@@ -7,7 +7,7 @@
 		"node": ">=7.6.0"
 	},
 	"scripts": {
-		"t": "nodemon test/server.js"
+		"t": "nodemon tst/server.js"
 	},
 	"repository": {
 		"type": "git",
