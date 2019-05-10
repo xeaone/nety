@@ -16,35 +16,49 @@ module.exports = {
         const strategy = option.strategy || tool.strategy;
 
         if (typeof validate !== 'string' && typeof validate !== 'function') {
-            return { code: 500, message: 'auth validate string or function required' };
+            this.context.code = 500;
+            this.context.message = 'auth validate string or function required';
+            return this.context;
         }
 
         if (typeof strategy !== 'string' && typeof strategy !== 'function') {
-            return { code: 500, message: 'auth strategy string or function required' };
+            this.context.code = 500;
+            this.context.message = 'auth strategy string or function required';
+            return this.context;
         }
 
         if (typeof validate === 'string' && !(validate in this.tool)) {
-            return { code: 500, message: 'auth validate not found in tools' };
+            this.context.code = 500;
+            this.context.message = 'auth validate not found in tools';
+            return this.context;
         }
 
         if (typeof strategy === 'string' && !(strategy in this.tool)) {
-            return { code: 500, message: 'auth strategy not found in tools' };
+            this.context.code = 500;
+            this.context.message = 'auth strategy not found in tools';
+            return this.context;
         }
 
         if (typeof realm !== 'string') {
-            return { code: 500, message: 'auth realm string required' };
+            this.context.code = 500;
+            this.context.message = 'auth realm string required';
+            return this.context;
         }
 
         if (typeof scheme !== 'string') {
-            return { code: 500, message: 'auth scheme string required' };
+            this.context.code = 500;
+            this.context.message = 'auth scheme string required';
+            return this.context;
         }
 
         const cookie = this.context.request.headers['Cookie'] || this.context.request.headers['cookie'];
         const authorization = this.context.request.headers['Authorization'] || this.context.request.headers['authorization'];
 
         if (!authorization && !cookie) {
+            this.context.code = 401;
+            this.context.message = 'authorization header required';
             this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
-            return { code: 401, message: 'authorization header required' };
+            return this.context;
         } else if (cookie) {
             const items = cookie.split(/\s*;\s*/);
 
@@ -68,16 +82,20 @@ module.exports = {
             const pattern = new RegExp(scheme, 'i');
 
             if (!authorization.match(pattern)) {
+                this.context.code = 401;
+                this.context.message = 'authorization scheme invalid';
                 this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
-                return { code: 401,  message: 'authorization scheme invalid' };
+                return this.context;
             }
 
             credential = authorization.replace(pattern, '').replace(/\s/g, '');
         }
 
         if (!credential) {
+            this.context.code = 401;
+            this.context.message = 'authorization credential required';
             this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
-            return { code: 401, message: 'authorization credential required' };
+            return this.context;
         }
 
         // Strategy Start
@@ -85,16 +103,22 @@ module.exports = {
         const strategyResult = await strategy(this.context, credential, strategyOptions);
 
         if (!strategyResult || typeof strategyResult !== 'object') {
-            return { code: 500, message: 'auth strategy object required' };
+            this.context.code = 500;
+            this.context.message = 'auth strategy object required';
+            return this.context;
         }
 
         if (!strategyResult.valid) {
+            this.context.code = 401;
             this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
-            return { code: 401, message: strategyResult.message || 'auth strategy invalid credential' };
+            this.context.message = strategyResult.message || 'auth strategy invalid credential';
+            return this.context;
         }
 
         if (!strategyResult.credential || typeof strategyResult.credential !== 'object') {
-            return { code: 500, message: 'auth strategy credential object required' };
+            this.context.code = 500;
+            this.context.message = 'auth strategy credential object required';
+            return this.context;
         }
 
         credential = strategyResult.credential;
@@ -105,21 +129,29 @@ module.exports = {
         const validateResult = await validate(this.context, credential, validateOptions);
 
         if (!validateResult || typeof validateResult !== 'object') {
-            return { code: 500, message: 'auth validate object required' };
+            this.context.code = 500;
+            this.context.message = 'auth validate object required';
+            return this.context;
         }
 
         if (!validateResult.valid) {
+            this.context.code = 401;
             this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
-            return { code: 401, message: validateResult.message || 'auth validate invalid credential' };
+            this.context.message = validateResult.message || 'auth validate invalid credential';
+            return this.context;
         }
 
         if (!validateResult.credential || typeof validateResult.credential !== 'object') {
-            return { code: 500, message: 'auth validate credential object required' };
+            this.context.code = 500;
+            this.context.message = 'auth validate credential object required';
+            return this.context;
         }
 
         credential = validateResult.credential;
         // Validate End
 
-        return { code: 200, credential };
+        this.context.code = 200;
+        this.context.credential = credential;
+        return this.context;
     }
 };

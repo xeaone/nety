@@ -223,10 +223,9 @@ module.exports = class Servey extends Events {
         }
 
         if (typeof route.handler !== 'function') {
-            return self.ender({
-                code: 500,
-                message: 'route handler requires function'
-            });
+            context.code = 500;
+            context.message = 'route handler requires function';
+            return self.ender(context);
         }
 
         if (context.options.auth) {
@@ -237,10 +236,9 @@ module.exports = class Servey extends Events {
             }
 
             if (!context.credential) {
-                return self.ender({
-                    code: 500,
-                    message: 'auth tool credential required'
-                });
+                context.code = 500;
+                context.message = 'auth tool credential required';
+                return self.ender(context);
             }
 
         }
@@ -249,9 +247,8 @@ module.exports = class Servey extends Events {
             const payload = await self.payloader(context);
 
             if (payload === null) {
-                return self.ender({
-                    code: 413
-                });
+                context.code = 413;
+                return self.ender(context);
             }
 
             context.payload = payload.toString();
