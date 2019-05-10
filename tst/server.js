@@ -140,8 +140,8 @@ const SECRET = 'secret';
             options: {
                 vhost: [ 'localhost:8080', 'testcom.localhost:8080' ]
             },
-            handler: async function (context) {
-                return await context.tool.static({
+            async handler (context) {
+                return context.tool.static({
                     spa: true,
                     folder: './tst/static',
                     path: context.url.pathname
@@ -167,10 +167,10 @@ const SECRET = 'secret';
         event: {
             handler: {
                 before () {
-                    console.log('before');
+                    // console.log('before');
                 },
                 after () {
-                    console.log('after');
+                    // console.log('after');
                 }
             }
         }
@@ -188,23 +188,28 @@ const SECRET = 'secret';
     });
 
     server.on('error', function (error) {
+        // console.log('error');
         console.error(error);
     });
 
-    server.on('request', function () {
+    server.on('request', function (context) {
+        console.log(context.url);
         console.log('request');
     });
 
     server.on('open', function () {
-        console.log('open');
+        // console.log('open');
     });
 
     server.on('close', function () {
-        console.log('close');
+        // console.log('close');
     });
 
     await server.open();
 
     console.log(server.port);
 
-}()).catch(console.error);
+}()).catch(function (error) {
+    console.log('here');
+    console.error(error);
+});
