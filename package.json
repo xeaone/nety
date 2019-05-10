@@ -2,11 +2,12 @@
 	"name": "servey",
 	"version": "5.2.6",
 	"description": "Servey | A configuration based async/await server",
-	"main": "lib/server.js",
+	"main": "dst/server.js",
 	"engines": {
 		"node": ">=7.6.0"
 	},
 	"scripts": {
+        "dst": "cp -r src/. dst",
 		"t": "nodemon tst/server.js"
 	},
 	"repository": {
