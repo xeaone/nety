@@ -103,10 +103,9 @@ module.exports = class Servey extends Events {
     async ender (context) {
         const self = this;
 
-        context.head['content-type'] = `${self.contentType};${self.charset}`;
-
-        await context.tool.head.cache();
-        await context.tool.head.security();
+        if (!context.head) {
+            context.head = {};
+        }
 
         if (!context.code) {
             context.code = 200;
@@ -118,6 +117,11 @@ module.exports = class Servey extends Events {
                 message: context.message || self.messages[context.code]
             };
         }
+
+        context.head['content-type'] = `${self.contentType};${self.charset}`;
+
+        await context.tool.head.cache();
+        await context.tool.head.security();
 
         if (context.body instanceof Stream.Readable) {
             const mime = await Utility.getMime(context.body.path);
