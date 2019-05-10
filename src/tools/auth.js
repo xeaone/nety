@@ -5,7 +5,9 @@ module.exports = {
     value: async function (option) {
 
         if (!option || typeof option !== 'object') {
-            return { code: 500, message: 'auth option object required' };
+            this.context.code = 500;
+            this.context.message = 'auth option object required';
+            return this.context;
         }
 
         let credential;
@@ -74,8 +76,10 @@ module.exports = {
             }
 
             if (!credential) {
+                this.context.code = 401;
+                this.context.message = 'authorization scheme invalid';
                 this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
-                return { code: 401,  message: 'authorization scheme invalid' };
+                return this.context;
             }
 
         } else if (authorization) {
@@ -100,7 +104,7 @@ module.exports = {
 
         // Strategy Start
         const strategyOptions = Object.assign(option, { tool, realm, scheme, validate, strategy });
-        const strategyResult = await strategy(this.context, credential, strategyOptions);
+        const strategyResult = await strategy(credential, strategyOptions);
 
         if (!strategyResult || typeof strategyResult !== 'object') {
             this.context.code = 500;
@@ -126,7 +130,7 @@ module.exports = {
 
         // Validate Start
         const validateOptions = Object.assign(option, { tool, realm, scheme, validate, strategy });
-        const validateResult = await validate(this.context, credential, validateOptions);
+        const validateResult = await validate(credential, validateOptions);
 
         if (!validateResult || typeof validateResult !== 'object') {
             this.context.code = 500;
