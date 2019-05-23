@@ -6,7 +6,7 @@
 // const Path = require('path');
 // const Toked = require('toked');
 // const Jwt = require('jsonwebtoken');
-const Servey = require('../lib/server');
+const Servey = require('../src/server');
 
 // const JwtSign = Util.promisify(Jwt.sign);
 

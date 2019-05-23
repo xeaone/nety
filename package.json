@@ -8,7 +8,7 @@
 	},
 	"scripts": {
         "dst": "cp -r src/. dst",
-		"t": "nodemon tst/server.js"
+		"t": "nodemon --watch src --watch tst tst/server.js"
 	},
 	"repository": {
 		"type": "git",
