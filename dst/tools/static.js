@@ -98,7 +98,7 @@ module.exports = {
 
             if (error.code === 'ENOENT' && data.spa) {
                 const extension = Path.extname(data.path).slice(1);
-                
+
                 if (!extension || extension === 'html') {
                     this.context.code = 200;
                     const spaStat = await Stat(spaPath);
