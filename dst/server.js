@@ -118,16 +118,16 @@ module.exports = class Servey extends Events {
             };
         }
 
-        context.head['content-type'] = `${self.contentType};${self.charset}`;
+        // context.head['content-type'] = `${self.contentType};${self.charset}`;
 
-        await context.tool.head.cache();
+        // await context.tool.head.cache();
         await context.tool.head.security();
 
         if (context.body instanceof Stream.Readable) {
             const mime = await Utility.getMime(context.body.path);
             context.head['content-type'] = `${mime};${self.charset}`;
 
-            await context.tool.compress();
+            // await context.tool.compress();
 
             context.response.writeHead(context.code, context.head);
 

@@ -3,17 +3,30 @@
 const Fs = require('fs');
 const Path = require('path');
 const Util = require('util');
+
 const Stat = Util.promisify(Fs.stat);
 
-const ErrorHandler = async function (path) {
-    try {
-        const stat = await Stat(path);
+const Stream = async function (path, stat) {
+    const range = this.context.request.headers.range;
 
-        if (stat.isFile()) {
-            return Fs.createReadStream(path);
-        }
+    this.context.head['accept-ranges'] = 'bytes';
 
-    } catch (e) { /* ignore */ }
+    if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : stat.size;
+
+        this.context.code = 206;
+        this.context.head['content-length'] = (end-start);
+        this.context.head['content-range'] = `bytes ${start}-${end}/${stat.size}`;
+        // this.context.head['content-range'] = `bytes ${start}-${end}/*`;
+
+        this.context.body = Fs.createReadStream(path, { start, end });
+    } else {
+        this.context.head['content-length'] = stat.size;
+        this.context.body = Fs.createReadStream(path);
+    }
+
 };
 
 const RESTRICT = /^(\.)+/;
@@ -33,73 +46,73 @@ module.exports = {
         data.path = data.path.replace(RESTRICT, '.');
         data.path = Path.extname(data.path) ? data.path : Path.join(data.path, data.file);
 
-        // const result = {};
-        // const result = { head: this.context.head };
-        const extension = Path.extname(data.path).slice(1);
         const spaPath = Path.join(data.folder, data.file);
         const fullPath = Path.join(data.folder, data.path);
         const errorPath = Path.join(data.folder, 'error.html');
 
         if (fullPath.indexOf(data.folder) !== 0) {
             this.context.code = 403;
-            this.context.body = await ErrorHandler(errorPath);
+
+            try {
+                const stat = await Stat(errorPath);
+                await Stream.call(this, errorPath, stat);
+            } catch (e) { /* ignore */ }
+
             return this.context;
         }
 
         if (fullPath.indexOf('\u0000') !== -1) {
             this.context.code = 404;
-            this.context.body = await ErrorHandler(errorPath);
+
+            try {
+                const stat = await Stat(errorPath);
+                await Stream.call(this, errorPath, stat);
+            } catch (e) { /* ignore */ }
+
             return this.context;
         }
 
         try {
-            const stat = await Stat(fullPath);
+            let path = fullPath;
+            let stat = await Stat(path);
+
+            if (stat.isDirectory()) {
+                path = Path.join(path, 'index.html');
+                stat = await Stat(path);
+            }
 
             if (stat.isFile()) {
-                const range = this.context.request.headers.range;
-
-                if (range) {
-                    const parts = range.replace(/bytes=/, '').split('-');
-                    const start = parseInt(parts[0], 10);
-                    const end = parts[1] ? parseInt(parts[1], 10) : stat.size-1;
-                    // const size = (end-start)+1;
-
-                    this.context.code = 206;
-                    // this.context.head['content-length'] = size;
-                    this.context.head['accept-ranges'] = 'bytes';
-                    this.context.head['content-range'] = `bytes ${start}-${end}/${stat.size}`;
-
-                    this.context.body = Fs.createReadStream(fullPath, { start, end });
-                } else {
-                    this.context.code = 200;
-                    // this.context.head['content-length'] = stat.size;
-                    this.context.body = Fs.createReadStream(fullPath);
-                }
+                this.context.code = 200;
+                await Stream.call(this, path, stat);
             } else if (data.spa) {
                 this.context.code = 200;
-                this.context.body = Fs.createReadStream(spaPath);
+                const spaStat = await Stat(spaPath);
+                await Stream.call(this, spaPath, spaStat);
             } else {
                 this.context.code = 404;
-                this.context.body = await ErrorHandler(errorPath);
+                const errorStat = await Stat(errorPath);
+                await Stream.call(this, errorPath, errorStat);
             }
 
         } catch (error) {
 
             if (error.code === 'ENOENT' && data.spa) {
-
+                const extension = Path.extname(data.path).slice(1);
+                
                 if (!extension || extension === 'html') {
                     this.context.code = 200;
-                    this.context.body = Fs.createReadStream(spaPath);
+                    const spaStat = await Stat(spaPath);
+                    await Stream.call(this, spaPath, spaStat);
                 } else {
                     this.context.code = 404;
-                    this.context.body = await ErrorHandler(errorPath);
+                    const errorStat = await Stat(errorPath);
+                    await Stream.call(this, errorPath, errorStat);
                 }
-                // } else if (fullPath.indexOf('\u0000') !== -1 || error.code === 'ENOENT') {
-                // 	this.context.code = 404;
-                // 	this.context.body = await ErrorHandler(errorPath);
+
             } else if (error.code === 'ENOENT' || error.code === 'EACCES' || error.code === 'EPERM') {
                 this.context.code = error.code === 'ENOENT' ? 404 : 403;
-                this.context.body = await ErrorHandler(errorPath);
+                const errorStat = await Stat(errorPath);
+                await Stream.call(this, errorPath, errorStat);
             } else {
                 throw error;
             }
