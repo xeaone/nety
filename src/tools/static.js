@@ -54,8 +54,8 @@ module.exports = {
             this.context.code = 403;
 
             try {
-                const stat = await Stat(errorPath);
-                await Stream.call(this, errorPath, stat);
+                const errorStat = await Stat(errorPath);
+                await Stream.call(this, errorPath, errorStat);
             } catch (e) { /* ignore */ }
 
             return this.context;
@@ -65,8 +65,8 @@ module.exports = {
             this.context.code = 404;
 
             try {
-                const stat = await Stat(errorPath);
-                await Stream.call(this, errorPath, stat);
+                const errorStat = await Stat(errorPath);
+                await Stream.call(this, errorPath, errorStat);
             } catch (e) { /* ignore */ }
 
             return this.context;
@@ -90,8 +90,12 @@ module.exports = {
                 await Stream.call(this, spaPath, spaStat);
             } else {
                 this.context.code = 404;
-                const errorStat = await Stat(errorPath);
-                await Stream.call(this, errorPath, errorStat);
+
+                try {
+                    const errorStat = await Stat(errorPath);
+                    await Stream.call(this, errorPath, errorStat);
+                } catch (e) { /* ignore */ }
+
             }
 
         } catch (error) {
@@ -105,14 +109,22 @@ module.exports = {
                     await Stream.call(this, spaPath, spaStat);
                 } else {
                     this.context.code = 404;
-                    const errorStat = await Stat(errorPath);
-                    await Stream.call(this, errorPath, errorStat);
+
+                    try {
+                        const errorStat = await Stat(errorPath);
+                        await Stream.call(this, errorPath, errorStat);
+                    } catch (e) { /* ignore */ }
+
                 }
 
             } else if (error.code === 'ENOENT' || error.code === 'EACCES' || error.code === 'EPERM') {
                 this.context.code = error.code === 'ENOENT' ? 404 : 403;
-                const errorStat = await Stat(errorPath);
-                await Stream.call(this, errorPath, errorStat);
+
+                try {
+                    const errorStat = await Stat(errorPath);
+                    await Stream.call(this, errorPath, errorStat);
+                } catch (e) { /* ignore */ }
+
             } else {
                 throw error;
             }
