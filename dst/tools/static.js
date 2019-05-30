@@ -7,25 +7,23 @@ const Util = require('util');
 const Stat = Util.promisify(Fs.stat);
 
 const Stream = async function (path, stat) {
-    // const range = this.context.request.headers.range;
-    //
-    // this.context.head['accept-ranges'] = 'bytes';
-    // 
-    // if (range) {
-    //     const parts = range.replace(/bytes=/, '').split('-');
-    //
-    //     const start = parseInt(parts[0], 10);
-    //     const end = parts[1] ? parseInt(parts[1], 10) : stat.size;
-    //
-    //     this.context.code = 206;
-    //     this.context.head['content-length'] = (end-start);
-    //     this.context.head['content-range'] = `bytes ${start}-${end}/${stat.size}`;
-    //     this.context.body = Fs.createReadStream(path, { start, end });
-    //
-    // } else {
+    const range = this.context.request.headers.range;
+
+    this.context.head['accept-ranges'] = 'bytes';
+
+    if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : stat.size;
+
+        this.context.code = 206;
+        this.context.head['content-length'] = (end-start);
+        this.context.head['content-range'] = `bytes ${start}-${end-1}/${stat.size}`;
+        this.context.body = Fs.createReadStream(path, { start, end });
+    } else {
         this.context.head['content-length'] = stat.size;
         this.context.body = Fs.createReadStream(path);
-    // }
+    }
 
 };
 
