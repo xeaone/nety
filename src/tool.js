@@ -4,6 +4,7 @@ const Utility = require('./utility.js');
 const Head = require('./tools/head.js');
 const Auth = require('./tools/auth.js');
 const Basic = require('./tools/basic.js');
+const Cookie = require('./tools/cookie.js');
 const Status = require('./tools/status.js');
 const Static = require('./tools/static.js');
 const Session = require('./tools/session.js');
@@ -18,6 +19,7 @@ module.exports = function Tool (options) {
         Head,
         Auth,
         Basic,
+        Cookie,
         Static,
         Status,
         Session,

@@ -153,14 +153,19 @@ const SECRET = 'secret';
     const server = new Servey({
         port: 8080,
         debug: true,
-        cache: false,
+        // cache: false,
         hostname: 'localhost',
         // tools: [
         //     Toked
         // ],
-        tool: {
+        
+        // tool: {
+        options: {
             cookie: {
                 secret: SECRET
+            },
+            cache: {
+                control: true
             }
         },
         routes: routes,
