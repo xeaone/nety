@@ -36,7 +36,7 @@ module.exports = class Cookie {
         let cookie = `${name}=${value}`;
 
         if (this.secure) cookie += 'Secure;';
-        if (this.hsttpOnly) cookie += 'HttpOnly;';
+        if (this.httpOnly) cookie += 'HttpOnly;';
         if (this.path) cookie += `Path=${this.path};`;
         if (this.domain) cookie += `Domain=${this.domain};`;
         if (this.maxAge) cookie += `Max-Age=${this.maxAge};`;
