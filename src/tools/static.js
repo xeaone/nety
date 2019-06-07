@@ -129,6 +129,10 @@ module.exports = {
 
         }
 
+        if (data.code) {
+            this.context.code = data.code;
+        }
+
         return this.context;
     }
 };

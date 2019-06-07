@@ -55,6 +55,7 @@ Inherits Events and returns a server instance.
 ### Servey.tools: Array
 Default server tools.
 - `static` Static file and single page application.
+    - `code: Number` overwrites status code
 	- `spa: Boolean` spa mode (defaults: `false`)
 	- `folder: String` path to (defaults: `./public`)
 	- `file: String` path to default file (default: `index.html`)
