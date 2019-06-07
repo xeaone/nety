@@ -56,14 +56,7 @@ module.exports = class Servey extends Events {
         const path = context.url.pathname;
 
         for (const route of routes) {
-            if (
-                (
-                    route.path === '*' ||
-                    route.path === '/*' ||
-    				route.path === path
-                ) &&
-				Utility.methodNormalize(route.method).includes(method)
-            ) {
+            if (Utility.compareMethod(route.method, method) && Utility.comparePath(route.path, path)) {
                 return route;
             }
         }
@@ -172,10 +165,9 @@ module.exports = class Servey extends Events {
             request,
             response,
             head: {},
-            // code: 200,
+            body: null,
             code: null,
             message: null,
-            body: null,
             instance: self,
             credential: null,
             options: Object.assign({}, self.options, {
