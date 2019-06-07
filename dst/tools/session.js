@@ -61,13 +61,18 @@ module.exports = class Session {
     }
 
     async sign (data, option) {
-        if (typeof data !== 'string') throw new Error('session data string required');
+
+        if (typeof data !== 'string') {
+            throw new Error('session data string required');
+        }
 
         option = option || {};
 
         const secret = option.secret || this.secret;
 
-        if (!secret) throw new Error('auth session secret required');
+        if (!secret) {
+            throw new Error('auth session secret required');
+        }
 
         const hex = Buffer.from(data, 'utf8').toString('hex');
         const hmac = Crypto.createHmac(this.algorithm, secret).update(data);
@@ -140,8 +145,13 @@ module.exports = class Session {
     async create (data, secret) {
         secret = secret || this.secret;
 
-        if (!data) throw new Error('session data required');
-        if (!secret) throw new Error('session secret required');
+        if (!data) {
+            throw new Error('session data required');
+        }
+
+        if (!secret) {
+            throw new Error('session secret required');
+        }
 
         const sid = await this.sid();
         const cookie = await this.sign(sid, { secret });

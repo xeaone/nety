@@ -27,7 +27,7 @@ const defaults = {
     mimes: Mimes,
     maxBytes: 1e6, // 1mb
     listener: null,
-    information: {},
+    // information: {},
     methods: Http.METHODS,
     messages: Http.STATUS_CODES,
     methodsString: Http.METHODS.join(','),

@@ -1,10 +1,6 @@
 'use strict';
 
-// const Fs = require('fs');
-// const Path = require('path');
-// const Util = require('util');
 const Url = require('url');
-// const Zlib = require('zlib');
 const Http = require('http');
 const Https = require('https');
 const Events = require('events');
@@ -36,18 +32,15 @@ module.exports = class Servey extends Events {
     }
 
     callback (request, response) {
-        const self = this;
-
         try {
-            self.handler(request, response);
+            this.handler(request, response);
         } catch (error) {
-            self.emit('error', error);
-            self.ender({
+            this.emit('error', error);
+            this.ender({
                 code: 500, request: request, response: response,
-                message: self.debug ? error.message : 'internal server error'
+                message: this.debug ? error.message : 'internal server error'
             });
         }
-
     }
 
     async router (context) {
@@ -55,12 +48,8 @@ module.exports = class Servey extends Events {
         const method = context.method;
         const path = context.url.pathname;
 
-        for (let route of routes) {
-            if (
-                route.path === '*' ||
-				route.path === path &&
-				Utility.methodNormalize(route.method).includes(method)
-            ) {
+        for (const route of routes) {
+            if (Utility.compareMethod(route.method, method) && Utility.comparePath(route.path, path)) {
                 return route;
             }
         }
@@ -111,17 +100,19 @@ module.exports = class Servey extends Events {
             context.code = 200;
         }
 
+        if (!context.message) {
+            context.message = Http.STATUS_CODES[context.code];
+        }
+
         if (!context.body) {
             context.body = {
                 code: context.code,
-                message: context.message || self.messages[context.code]
+                message: context.message
             };
         }
 
-        context.head['content-type'] = `${self.contentType};${self.charset}`;
-
-        await context.tool.head.cache();
-        await context.tool.head.security();
+        // await context.tool.head.cache();
+        // await context.tool.head.security();
 
         if (context.body instanceof Stream.Readable) {
             const mime = await Utility.getMime(context.body.path);
@@ -129,7 +120,7 @@ module.exports = class Servey extends Events {
 
             // await context.tool.compress();
 
-            context.response.writeHead(context.code, context.head);
+            context.response.writeHead(context.code, context.message, context.head);
 
             await self.streamer(context);
 
@@ -140,21 +131,23 @@ module.exports = class Servey extends Events {
             const mime = await Utility.getMime('json');
             context.head['content-type'] = `${mime};${self.charset}`;
             context.body = JSON.stringify(context.body);
+        } else {
+            context.head['content-type'] = `${self.contentType};${self.charset}`;
         }
 
         context.head['content-length'] = Buffer.byteLength(context.body);
-        context.response.writeHead(context.code, context.head);
+        context.response.writeHead(context.code, context.message, context.head);
         context.response.end(context.body);
     }
 
     async handler (request, response) {
         const self = this;
-        const url = Url.parse(request.url);
-        const query = Querystring.parse(url.query);
-        const method = Utility.methodNormalize(request.method);
 
         self.emit('request', request);
 
+        const method = request.method;
+        const url = Url.parse(request.url);
+        const query = Querystring.parse(url.query);
         const tool = Object.create(self.tool);
 
         const context = {
@@ -165,22 +158,42 @@ module.exports = class Servey extends Events {
             request,
             response,
             head: {},
-            code: 200,
             body: null,
-            options: {},
+            code: null,
+            message: null,
             instance: self,
-            credential: null
+            credential: null,
+            options: Object.assign({}, self.options, {
+                auth: self.auth,
+                cors: self.cors,
+                cache: self.cache
+            })
         };
 
         context.tool.context = context;
 
         const route = await self.router(context);
 
-        context.options = Object.assign({}, {
-            auth: self.auth,
-            cors: self.cors,
-            cache: self.cache
-        }, route && route.options ? route.options : {});
+        context.options = Object.assign({}, route && route.options ? route.options : {});
+
+        await context.tool.cache(context.options.cache);
+        await context.tool.head.security();
+
+        if (context.options.auth) {
+
+            await context.tool.auth(context.options.auth);
+
+            if (context.code !== 200) {
+                return self.ender(context);
+            }
+
+            if (!context.credential) {
+                context.code = 500;
+                context.message = 'auth tool credential required';
+                return self.ender(context);
+            }
+
+        }
 
         if (context.options.vhost) {
             const vhosts = [].concat(context.options.vhost);
@@ -202,10 +215,11 @@ module.exports = class Servey extends Events {
 
         // preflight CORS CORBS
         if (context.method.includes('OPTIONS')) {
-            await context.tool.head.security();
+            // await context.tool.head.security();
 
             context.code = 204;
-            context.response.writeHead(context.code, context.head);
+            context.message = Http.STATUS_CODES[204];
+            context.response.writeHead(context.code, context.message, context.head);
             context.response.end();
 
             return;
@@ -226,21 +240,6 @@ module.exports = class Servey extends Events {
             context.code = 500;
             context.message = 'route handler requires function';
             return self.ender(context);
-        }
-
-        if (context.options.auth) {
-            await context.tool.auth(context.options.auth);
-
-            if (context.code !== 200) {
-                return self.ender(context);
-            }
-
-            if (!context.credential) {
-                context.code = 500;
-                context.message = 'auth tool credential required';
-                return self.ender(context);
-            }
-
         }
 
         if (context.method.includes('POST')) {
@@ -276,6 +275,7 @@ module.exports = class Servey extends Events {
         }
 
         const result = await route.handler(context);
+
         Object.assign(context, result);
 
         if (self.event && self.event.handler) {
@@ -294,7 +294,7 @@ module.exports = class Servey extends Events {
         return new Promise(function (resolve) {
             const options = { port: self.port, host: self.hostname };
             self.listener.listen(options, function () {
-                Object.assign(self.information, self.listener.address());
+                // Object.assign(self.information, self.listener.address());
                 self.emit('open');
                 resolve();
             });
