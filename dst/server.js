@@ -206,7 +206,7 @@ module.exports = class Servey extends Events {
 
         }
 
-        if (context.url.pathname !== '/' && context.url.pathname.slice(-1) === '/') {
+        if (context.url.pathname !== '/' && context.url.pathname.endsWith('/')) {
             const pathname = context.url.pathname.replace(/\/+/, '/').slice(0, -1) || '/';
             const location = `${pathname}${context.url.search || ''}${context.url.hash || ''}`;
             await context.tool.redirect(location);

@@ -36,6 +36,7 @@ module.exports = {
         data = data || {};
         data = typeof data === 'string' ? { path: data } : data;
 
+
         data.file = data.file || 'index.html';
         data.folder = Path.resolve(data.folder || 'public');
         data.spa = data.spa === undefined || data.spa === null ? false : data.spa;
@@ -44,9 +45,11 @@ module.exports = {
         data.path = data.path.replace(RESTRICT, '.');
         data.path = Path.extname(data.path) ? data.path : Path.join(data.path, data.file);
 
+        data.error = data.error || 'error.html';
+
         const spaPath = Path.join(data.folder, data.file);
         const fullPath = Path.join(data.folder, data.path);
-        const errorPath = Path.join(data.folder, 'error.html');
+        const errorPath = Path.join(data.folder, data.error);
 
         if (fullPath.indexOf(data.folder) !== 0) {
             this.context.code = 403;
