@@ -82,7 +82,7 @@ module.exports = {
             if (stat.isFile()) {
                 this.context.code = 200;
                 await Stream.call(this, path, stat);
-            } else if (data.spa) {
+            } else if (data.spa === true) {
                 this.context.code = 200;
                 const spaStat = await Stat(spaPath);
                 await Stream.call(this, spaPath, spaStat);
