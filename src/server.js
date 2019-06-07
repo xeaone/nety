@@ -32,18 +32,15 @@ module.exports = class Servey extends Events {
     }
 
     callback (request, response) {
-        const self = this;
-
         try {
-            self.handler(request, response);
+            this.handler(request, response);
         } catch (error) {
-            self.emit('error', error);
-            self.ender({
+            this.emit('error', error);
+            this.ender({
                 code: 500, request: request, response: response,
-                message: self.debug ? error.message : 'internal server error'
+                message: this.debug ? error.message : 'internal server error'
             });
         }
-
     }
 
     async router (context) {
@@ -110,11 +107,9 @@ module.exports = class Servey extends Events {
         if (!context.body) {
             context.body = {
                 code: context.code,
-                message: context.message || Http.STATUS_CODES[context.code]
+                message: context.message
             };
         }
-
-        context.head['content-type'] = `${self.contentType};${self.charset}`;
 
         // await context.tool.head.cache();
         // await context.tool.head.security();
@@ -136,6 +131,8 @@ module.exports = class Servey extends Events {
             const mime = await Utility.getMime('json');
             context.head['content-type'] = `${mime};${self.charset}`;
             context.body = JSON.stringify(context.body);
+        } else {
+            context.head['content-type'] = `${self.contentType};${self.charset}`;
         }
 
         context.head['content-length'] = Buffer.byteLength(context.body);
@@ -278,6 +275,7 @@ module.exports = class Servey extends Events {
         }
 
         const result = await route.handler(context);
+
         Object.assign(context, result);
 
         if (self.event && self.event.handler) {
@@ -296,7 +294,7 @@ module.exports = class Servey extends Events {
         return new Promise(function (resolve) {
             const options = { port: self.port, host: self.hostname };
             self.listener.listen(options, function () {
-                Object.assign(self.information, self.listener.address());
+                // Object.assign(self.information, self.listener.address());
                 self.emit('open');
                 resolve();
             });

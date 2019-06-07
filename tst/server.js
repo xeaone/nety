@@ -135,7 +135,7 @@ const SECRET = 'secret';
             }
         },
         {
-            path: '*',
+            path:'/(*)',
             method: 'get',
             options: {
                 vhost: [ 'localhost:8080', 'testcom.localhost:8080' ]
@@ -158,7 +158,7 @@ const SECRET = 'secret';
         // tools: [
         //     Toked
         // ],
-        
+
         // tool: {
         options: {
             cookie: {
@@ -198,7 +198,7 @@ const SECRET = 'secret';
     });
 
     server.on('request', function (context) {
-        console.log(context.url);
+        // console.log(context.url);
         console.log('request');
     });
 
