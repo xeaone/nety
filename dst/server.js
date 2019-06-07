@@ -160,21 +160,38 @@ module.exports = class Servey extends Events {
             head: {},
             body: null,
             code: null,
+            options: {},
             message: null,
             instance: self,
-            credential: null,
-            options: Object.assign({}, self.options, {
-                auth: self.auth,
-                cors: self.cors,
-                cache: self.cache
-            })
+            credential: null
         };
 
         context.tool.context = context;
 
+        context.options = Object.assign(self.options || {}, {
+            auth: self.auth,
+            cors: self.cors,
+            cache: self.cache,
+        });
+
         const route = await self.router(context);
 
-        context.options = Object.assign({}, route && route.options ? route.options : {});
+        if (route) {
+            context.options = Object.assign(context.options, route.options ? route.options : {});
+
+            if (route.auth !== undefined && route.auth !== null) {
+                context.options.auth = route.auth;
+            }
+
+            if (route.cors !== undefined && route.cors !== null) {
+                context.options.cors = route.cors;
+            }
+
+            if (route.cache !== undefined && route.cache !== null) {
+                context.options.cache = route.cache;
+            }
+
+        }
 
         await context.tool.cache(context.options.cache);
         await context.tool.head.security();

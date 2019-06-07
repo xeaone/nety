@@ -5,7 +5,10 @@
 module.exports = {
     name: 'cache',
     value: async function (option) {
-        option = option || {};
+
+        if (typeof option !== 'object') {
+            option = { control: option };
+        }
 
         if (typeof option.control === 'string') {
             this.context.head['cache-control'] = option.control;
