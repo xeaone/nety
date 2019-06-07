@@ -1,10 +1,6 @@
 'use strict';
 
-// const Fs = require('fs');
-// const Path = require('path');
-// const Util = require('util');
 const Url = require('url');
-// const Zlib = require('zlib');
 const Http = require('http');
 const Https = require('https');
 const Events = require('events');
