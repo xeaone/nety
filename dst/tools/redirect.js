@@ -4,9 +4,11 @@ module.exports = {
     name: 'redirect',
     value: async function (url, option) {
         option = option || {};
-        
+
         this.context.head.location = url;
         this.context.code = option.code || 301;
+
+        this.context.head['content-type'] = 'document';
 
         this.context.body = option.body || `
         <!DOCTYPE html>

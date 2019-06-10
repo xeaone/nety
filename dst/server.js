@@ -131,11 +131,16 @@ module.exports = class Servey extends Events {
             const mime = await Utility.getMime('json');
             context.head['content-type'] = `${mime};${self.charset}`;
             context.body = JSON.stringify(context.body);
-        } else {
+        }
+
+        if (!context.head['content-type']) {
             context.head['content-type'] = `${self.contentType};${self.charset}`;
         }
 
-        context.head['content-length'] = Buffer.byteLength(context.body);
+        if (!context.head['content-length']) {
+            context.head['content-length'] = Buffer.byteLength(context.body);
+        }
+
         context.response.writeHead(context.code, context.message, context.head);
         context.response.end(context.body);
     }
