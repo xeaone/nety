@@ -181,6 +181,9 @@ module.exports = class Servey extends Events {
 
         const route = await self.router(context);
 
+        await context.tool.cache(context.options.cache);
+        await context.tool.head.security();
+
         if (route) {
             context.options = Object.assign(context.options, route.options ? route.options : {});
 
@@ -197,9 +200,6 @@ module.exports = class Servey extends Events {
             }
 
         }
-
-        await context.tool.cache(context.options.cache);
-        await context.tool.head.security();
 
         if (context.options.auth) {
 
@@ -228,8 +228,8 @@ module.exports = class Servey extends Events {
 
         }
 
-        if (context.url.pathname !== '/' && context.url.pathname.endsWith('/')) {
-            const pathname = context.url.pathname.replace(/\/+/, '/').slice(0, -1) || '/';
+        if (context.url.pathname !== '/' && context.url.pathname.endsWith('/') || context.url.pathname.includes('//')) {
+            const pathname = context.url.pathname.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
             const location = `${pathname}${context.url.search || ''}${context.url.hash || ''}`;
             await context.tool.redirect(location);
             return self.ender(context);
