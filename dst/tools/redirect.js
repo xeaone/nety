@@ -8,7 +8,7 @@ module.exports = {
         this.context.head.location = url;
         this.context.code = option.code || 301;
 
-        this.context.head['content-type'] = 'document';
+        this.context.head['content-type'] = 'text/html';
 
         this.context.body = option.body || `
         <!DOCTYPE html>
