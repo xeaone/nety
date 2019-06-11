@@ -153,6 +153,7 @@ const SECRET = 'secret';
     const server = new Servey({
         port: 8080,
         debug: true,
+        www: true,
         // cache: false,
         hostname: 'localhost',
         // tools: [

@@ -22,6 +22,8 @@ const defaults = {
 
     debug: false,
 
+    www: false,
+
     cache: true,
     secure: null,
     mimes: Mimes,
@@ -40,9 +42,8 @@ const defaults = {
 };
 
 module.exports = function Options (options) {
-    const self = this;
 
-    for (let route of options.routes) {
+    for (const route of options.routes) {
 
         if (typeof route !== 'object') {
             throw new Error('route type invalid');
@@ -62,7 +63,7 @@ module.exports = function Options (options) {
 
     }
 
-    for (let name in defaults) {
+    for (const name in defaults) {
 
         let property = {
             enumerable: true
@@ -74,7 +75,7 @@ module.exports = function Options (options) {
             property.value = options[name];
         }
 
-        Object.defineProperty(self, name, property);
+        Object.defineProperty(this, name, property);
     }
 
 };
