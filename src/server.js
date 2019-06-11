@@ -154,7 +154,7 @@ module.exports = class Servey extends Events {
         const method = request.method;
         const host = request.headers.host;
         const protocol = self.secure ? 'https' : 'http';
-        const url = new Url(path, `${protocol}:${host}`);
+        const url = new Url(path, `${protocol}://${host}`);
         const query = Querystring.parse(url.query);
         const tool = Object.create(self.tool);
 
