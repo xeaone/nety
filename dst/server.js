@@ -1,8 +1,8 @@
 'use strict';
 
-const Url = require('url');
 const Http = require('http');
 const Https = require('https');
+const Url = require('url').URL;
 const Events = require('events');
 const Stream = require('stream');
 const Buffer = require('buffer').Buffer;
@@ -150,8 +150,11 @@ module.exports = class Servey extends Events {
 
         self.emit('request', request);
 
+        const path = request.url;
         const method = request.method;
-        const url = Url.parse(request.url);
+        const host = request.headers.host;
+        const protocol = self.secure ? 'https' : 'http';
+        const url = new Url(path, `${protocol}:${host}`);
         const query = Querystring.parse(url.query);
         const tool = Object.create(self.tool);
 
@@ -174,9 +177,11 @@ module.exports = class Servey extends Events {
         context.tool.context = context;
 
         context.options = Object.assign(self.options || {}, {
+            www: self.www,
             auth: self.auth,
             cors: self.cors,
             cache: self.cache,
+            secure: self.secure
         });
 
         const route = await self.router(context);
@@ -201,6 +206,30 @@ module.exports = class Servey extends Events {
 
         }
 
+        if (context.options.www && context.url.hostname.startsWith('www.')) {
+            context.url.pathname = context.url.pathname.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+            context.url.hostname = context.url.hostname.slice(4);
+            await context.tool.redirect(context.url.href);
+            return self.ender(context);
+        }
+
+        if (context.url.pathname !== '/' && context.url.pathname.endsWith('/') || context.url.pathname.includes('//')) {
+            context.url.pathname = context.url.pathname.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+            await context.tool.redirect(context.url.href);
+            return self.ender(context);
+        }
+
+        if (context.options.vhost) {
+            const vhosts = [].concat(context.options.vhost);
+            const hostname = request.headers.host;
+
+            if (!vhosts.includes(hostname)) {
+                context.code = 404;
+                return self.ender(context);
+            }
+
+        }
+
         if (context.options.auth) {
 
             await context.tool.auth(context.options.auth);
@@ -215,24 +244,6 @@ module.exports = class Servey extends Events {
                 return self.ender(context);
             }
 
-        }
-
-        if (context.options.vhost) {
-            const vhosts = [].concat(context.options.vhost);
-            const hostname = request.headers.host;
-
-            if (!vhosts.includes(hostname)) {
-                context.code = 404;
-                return self.ender(context);
-            }
-
-        }
-
-        if (context.url.pathname !== '/' && context.url.pathname.endsWith('/') || context.url.pathname.includes('//')) {
-            const pathname = context.url.pathname.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
-            const location = `${pathname}${context.url.search || ''}${context.url.hash || ''}`;
-            await context.tool.redirect(location);
-            return self.ender(context);
         }
 
         // preflight CORS CORBS
