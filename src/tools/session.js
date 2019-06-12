@@ -109,9 +109,8 @@ module.exports = class Session {
             throw new Error('session secret required');
         }
 
-        const parts = data.split(this.seperator);
-        const hmac = parts[1];
-        const text = Buffer.from(parts[0], 'hex').toString('utf8');
+        const [ hex, hmac ] = data.split(this.seperator);
+        const text = Buffer.from(hex, 'hex').toString('utf8');
 
         const computed = Crypto.createHmac(this.algorithm, secret).update(text).digest(this.format);
 
