@@ -58,53 +58,13 @@ module.exports = {
 
         if (!authorization && !cookie) {
             this.context.code = 401;
-            this.context.message = 'authorization header required';
-            this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
-            return this.context;
-        } else if (cookie) {
-            const items = cookie.split(/\s*;\s*/);
-
-            for (const item of items) {
-                const parts = item.split(/\s*=\s*/);
-                const name = parts[0];
-
-                if (name === scheme) {
-                    credential = decodeURI(parts[1]);
-                    break;
-                }
-
-            }
-
-            if (!credential) {
-                this.context.code = 401;
-                this.context.message = 'authorization scheme invalid';
-                this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
-                return this.context;
-            }
-
-        } else if (authorization) {
-            const pattern = new RegExp(scheme, 'i');
-
-            if (!authorization.match(pattern)) {
-                this.context.code = 401;
-                this.context.message = 'authorization scheme invalid';
-                this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
-                return this.context;
-            }
-
-            credential = authorization.replace(pattern, '').replace(/\s/g, '');
-        }
-
-        if (!credential) {
-            this.context.code = 401;
-            this.context.message = 'authorization credential required';
+            this.context.message = 'authorization header or cookie header required';
             this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
             return this.context;
         }
 
         // Strategy Start
-        const strategyOptions = Object.assign(option, { tool, realm, scheme, validate, strategy });
-        const strategyResult = await strategy(credential, strategyOptions);
+        const strategyResult = await strategy.call(tool, this.context, option);
 
         if (!strategyResult || typeof strategyResult !== 'object') {
             this.context.code = 500;
@@ -129,8 +89,7 @@ module.exports = {
         // Strategy End
 
         // Validate Start
-        const validateOptions = Object.assign(option, { tool, realm, scheme, validate, strategy });
-        const validateResult = await validate(credential, validateOptions);
+        const validateResult = await validate.call(tool, this.context, credential);
 
         if (!validateResult || typeof validateResult !== 'object') {
             this.context.code = 500;
