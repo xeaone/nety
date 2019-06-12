@@ -10,17 +10,22 @@ module.exports = class Basic {
         this.seperator = option.seperator || ':';
     }
 
-    async strategy (encoded, option) {
-        const format = option.format || this.format;
-        const seperator = option.seperator || this.seperator;
+    async strategy (context, option) {
+        const authorization = context.request.headers['Authorization'] || context.request.headers['authorization'] || '';
+        const scheme = new RegExp(this.scheme, 'i');
+        const encoded = authorization.replace(scheme, '').replace(/\s/g, '');
 
-        const credential = Buffer.from(encoded, format).toString();
+        if (!encoded) {
+            return { valid: false, message: 'auth basic invalid authorization scheme' };
+        }
 
-        if (credential.indexOf(seperator) === -1) {
+        const credential = Buffer.from(encoded, this.format).toString('utf8');
+
+        if (credential.indexOf(this.seperator) === -1) {
             return { valid: false, message: 'auth basic invalid authorization format' };
         }
 
-        const parts = credential.split(seperator);
+        const parts = credential.split(this.seperator);
         const decoded = { username: parts[0], password: parts[1] };
 
         return { valid: true, credential: { decoded, encoded } };

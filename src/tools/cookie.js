@@ -49,7 +49,7 @@ module.exports = class Cookie {
     }
 
     async entries () {
-        const header = this.context.request.headers['Cookie'] || this.context.request.headers['cookie'];
+        const header = this.context.request.headers['Cookie'] || this.context.request.headers['cookie'] || '';
         const cookies = header.split(/\s*;\s*/);
 
         const result = {};

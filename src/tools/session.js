@@ -22,11 +22,26 @@ module.exports = class Session {
         this.storage = option.storage || new Map();
     }
 
-    async strategy (encoded, option) {
+    async strategy (context, option) {
+        const header = context.request.headers['cookie'] || context.request.headers['cookie'] || '';
+        const cookies = header.split(/\s*;\s*/);
+
+        let encoded;
+        for (const cookie of cookies) {
+            const [ name, value ] = cookie.split(/\s*=\s*/);
+            if (name === this.scheme) {
+                encoded = QueryString.unescape(value);
+            }
+        }
+
+        if (!encoded) {
+            return { valid: false, message: 'auth session invalid encoded cookie' };
+        }
+
         const decoded = await this.unsign(encoded, option);
 
         if (!decoded) {
-            return { valid: false, message: 'session invalid' };
+            return { valid: false, message: 'auth session invalid decoded cookie' };
         }
 
         return { valid: true, credential: { decoded, encoded } };
@@ -87,7 +102,6 @@ module.exports = class Session {
         }
 
         option = option || {};
-
         const secret = option.secret || this.secret;
 
         if (!secret) {
