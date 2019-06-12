@@ -2,6 +2,7 @@
 
 const Util = require('util');
 const Crypto = require('crypto');
+const QueryString = require('querystring');
 const RandomBytes = Util.promisify(Crypto.randomBytes);
 
 module.exports = class Session {
