@@ -92,19 +92,19 @@ module.exports = class Servey extends Events {
     async ender (context) {
         const self = this;
 
-        if (!context.head) {
+        if ('head' in context.head === false) {
             context.head = {};
         }
 
-        if (!context.code) {
+        if ('code' in context.code === false) {
             context.code = 200;
         }
 
-        if (!context.message) {
+        if ('message' in context.message === false) {
             context.message = Http.STATUS_CODES[context.code];
         }
 
-        if (!context.body) {
+        if ('body' in context.body === false) {
             context.body = {
                 code: context.code,
                 message: context.message
