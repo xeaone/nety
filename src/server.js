@@ -92,19 +92,19 @@ module.exports = class Servey extends Events {
     async ender (context) {
         const self = this;
 
-        if ('head' in context.head === false) {
+        if ('head' in context === false) {
             context.head = {};
         }
 
-        if ('code' in context.code === false) {
+        if ('code' in context === false) {
             context.code = 200;
         }
 
-        if ('message' in context.message === false) {
+        if ('message' in context === false) {
             context.message = Http.STATUS_CODES[context.code];
         }
 
-        if ('body' in context.body === false) {
+        if ('body' in context === false) {
             context.body = {
                 code: context.code,
                 message: context.message
@@ -206,15 +206,25 @@ module.exports = class Servey extends Events {
 
         }
 
+        let rewrite = false;
+        const xfp = context.request.headers['X-Forwarded-Proto'] || context.request.headers['x-forwarded-proto'];
+
+        if (context.options.httpRedirect && xfp === 'http') {
+            context.url.protocol = 'https:';
+            rewrite = true;
+        }
+
         if (context.options.www && context.url.hostname.startsWith('www.')) {
-            context.url.pathname = context.url.pathname.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
             context.url.hostname = context.url.hostname.slice(4);
-            await context.tool.redirect(context.url.href);
-            return self.ender(context);
+            rewrite = true;
         }
 
         if (context.url.pathname !== '/' && context.url.pathname.endsWith('/') || context.url.pathname.includes('//')) {
             context.url.pathname = context.url.pathname.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+            rewrite = true;
+        }
+
+        if (rewrite) {
             await context.tool.redirect(context.url.href);
             return self.ender(context);
         }
