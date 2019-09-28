@@ -73,9 +73,19 @@ module.exports = {
         }
 
         if (!strategyResult.valid) {
-            this.context.code = 401;
-            this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
-            this.context.message = strategyResult.message || 'auth strategy invalid credential';
+            // this.context.code = 401;
+            // this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
+            // this.context.message = strategyResult.message || 'auth strategy invalid credential';
+
+            if (strategyResult.code === 403) {
+                this.context.code = 403;
+                this.context.message = strategyResult.message;
+            } else {
+                this.context.code = 401;
+                this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
+                this.context.message = strategyResult.message || 'auth strategy invalid credential';
+            }
+
             return this.context;
         }
 
@@ -98,9 +108,19 @@ module.exports = {
         }
 
         if (!validateResult.valid) {
-            this.context.code = 401;
-            this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
-            this.context.message = validateResult.message || 'auth validate invalid credential';
+            // this.context.code = 401;
+            // this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
+            // this.context.message = validateResult.message || 'auth validate invalid credential';
+
+            if (validateResult.code === 403) {
+                this.context.code = 403;
+                this.context.message = validateResult.message;
+            } else {
+                this.context.code = 401;
+                this.context.head['WWW-Authenticate'] = `${scheme} realm="${realm}"`;
+                this.context.message = validateResult.message || 'auth validate invalid credential';
+            }
+
             return this.context;
         }
 
