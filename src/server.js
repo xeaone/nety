@@ -1,357 +1,185 @@
 'use strict';
 
+const Path = require('path');
+const Util = require('util');
 const Http = require('http');
-const Https = require('https');
 const Url = require('url').URL;
 const Events = require('events');
 const Stream = require('stream');
-const Buffer = require('buffer').Buffer;
 const Querystring = require('querystring');
 
-const Tool = require('./tool');
-const Option = require('./option');
-const Utility = require('./utility');
+const Mime = require('./mime.js');
+const Status = require('./status.js');
 
 module.exports = class Servey extends Events {
 
-    constructor (options) {
+    constructor (options = {}) {
         super();
 
-        options = options || {};
+        this.xss = true;
+        this.hsts = true;
+        this.xframe = true;
+        this.xcontent = true;
+        this.xdownload = true;
 
-        if (options.listener) {
-            options.listener.on('request', this.callback.bind(this));
-        } else if (options.secure) {
-            options.listener = Https.createServer(options.secure, this.callback.bind(this));
-        } else {
-            options.listener = Http.createServer(this.callback.bind(this));
-        }
+        this.mime = Mime;
+        this.status = Status;
 
-        Option.call(this, options);
-        Tool.call(this, options);
+        this.debug = options.debug || false;
+
+        this.charset = options.charset || 'charset=utf8';
+        this.contentType = options.contentType || 'text/plain';
+
+        this.handlers = options.handlers || [];
+        this.listeners = options.listeners || [];
     }
 
-    callback (request, response) {
-        try {
-            this.handler(request, response);
-        } catch (error) {
-            this.emit('error', error);
-            this.ender({
-                code: 500, request: request, response: response,
-                message: this.debug ? error.message : 'internal server error'
-            });
+    head () {
+        const head = {};
+
+        if (this.hsts === true) {
+            head['strict-transport-security'] = 'max-age=31536000; includeSubDomains; preload';
+        } else if (typeof this.hsts === 'string') {
+            head['strict-transport-security'] = this.hsts;
         }
+
+        if (this.xframe === true) {
+            head['x-frame-options'] = 'SAMEORIGIN';
+        } else if (typeof this.xframe === 'string') {
+            head['x-frame-options'] = this.xframe;
+        }
+
+        if (this.xss === true) {
+            head['x-xss-protection'] = '1; mode=block';
+        } else if (typeof this.xss === 'string') {
+            head['x-xss-protection'] = this.xss;
+        }
+
+        if (this.xdownload === true) {
+            head['x-download-options'] = 'noopen';
+        } else if (typeof this.xdownload === 'string') {
+            head['x-download-options'] = this.xdownload;
+        }
+
+        if (this.xcontent === true) {
+            head['x-content-type-options'] = 'nosniff';
+        } else if (typeof this.xcontent === 'string') {
+            head['x-content-type-options'] = this.xcontent;
+        }
+
+        return head;
     }
 
-    async router (context) {
-        const routes = this.routes;
-        const method = context.method;
-        const path = context.url.pathname;
-
-        for (const route of routes) {
-            if (Utility.compareMethod(route.method, method) && Utility.comparePath(route.path, path)) {
-                return route;
-            }
-        }
-
-        return null;
+    extension (data) {
+        data = data || '';
+        return data.includes('.') ? Path.extname(data).slice(1) : 'txt';
     }
 
-    async payloader (context) {
-        const self = this;
-        return new Promise(function (resolve, reject) {
-            const chunks = [];
+    end (context) {
 
-            context.request.on('error', reject);
-
-            context.request.on('data', function (chunk) {
-                if (chunks.byteLength > self.maxBytes) {
-                    context.request.connection.destroy();
-                    resolve(null);
-                } else {
-                    chunks.push(chunk);
-                }
-            });
-
-            context.request.on('end', function () {
-                resolve(chunks);
-            });
-
-        });
-    }
-
-    async streamer (context) {
-        return new Promise(function (resolve, reject) {
-            context.body
-                .pipe(context.response)
-                .on('end', resolve)
-                .on('error', reject);
-        });
-    }
-
-    async ender (context) {
-        const self = this;
-
-        if ('head' in context === false) {
-            context.head = {};
-        }
-
-        if ('code' in context === false) {
-            context.code = 200;
-        }
-
-        if ('message' in context === false) {
-            context.message = Http.STATUS_CODES[context.code];
-        }
-
-        if ('body' in context === false) {
-            context.body = {
-                code: context.code,
-                message: context.message
-            };
-        }
-
-        // await context.tool.head.cache();
-        // await context.tool.head.security();
+        if (context.head === null || context.head === undefined) context.head = {};
+        if (context.code === null || context.code === undefined) context.code = 200;
+        if (context.message === null || context.message !== undefined) context.message = this.status[ context.code ];
+        if (context.body === null || context.body === undefined) context.body = { code: context.code, message: context.message };
 
         if (context.body instanceof Stream.Readable) {
-            const mime = await Utility.getMime(context.body.path);
-            context.head['content-type'] = `${mime};${self.charset}`;
+            const extension = this.extension(context.body.path);
+            const mime = context.instance.mime[extension];
 
-            // await context.tool.compress();
-
-            context.response.writeHead(context.code, context.message, context.head);
-
-            await self.streamer(context);
+            context.head['content-type'] = `${mime};${this.charset}`;
+            context.response.writeHead(context.code, context.head);
+            context.body.pipe(context.response);
 
             return;
         }
 
         if (typeof context.body === 'object') {
-            const mime = await Utility.getMime('json');
-            context.head['content-type'] = `${mime};${self.charset}`;
+            const mime = context.instance.mime['json'];
+            context.head['content-type'] = `${mime};${this.charset}`;
             context.body = JSON.stringify(context.body);
         }
 
-        if (!context.head['content-type']) {
-            context.head['content-type'] = `${self.contentType};${self.charset}`;
-        }
+        if (!context.head['content-type']) context.head['content-type'] = `${this.contentType};${this.charset}`;
+        if (!context.head['content-length']) context.head['content-length'] = Buffer.byteLength(context.body);
 
-        if (!context.head['content-length']) {
-            context.head['content-length'] = Buffer.byteLength(context.body);
-        }
-
-        context.response.writeHead(context.code, context.message, context.head);
+        context.response.writeHead(context.code, context.head);
         context.response.end(context.body);
     }
 
-    async handler (request, response) {
-        const self = this;
+    handle (listener, request, response) {
 
-        self.emit('request', request);
+        const body = null;
+        const code = null;
+        const message = null;
+        const head = this.head();
+        const context = { code, body, message, head };
+        const end = this.end.bind(this, context);
 
-        const path = request.url;
-        const method = request.method;
-        const host = request.headers.host;
-        const protocol = self.secure ? 'https' : 'http';
-        const url = new Url(path, `${protocol}://${host}`);
-        const query = Querystring.parse(url.query);
-        const tool = Object.create(self.tool);
+        const headers = request.headers;
 
-        const context = {
-            url,
-            tool,
-            query,
-            method,
-            request,
-            response,
-            head: {},
-            body: null,
-            code: null,
-            options: {},
-            message: null,
-            instance: self,
-            credential: null
-        };
+        const path = headers[':path'] || request.url;
+        const method = (headers[':method'] || request.method).toLowerCase();
+        const authority = (headers[':authority'] || headers['host']).toLowerCase();
+        const scheme = headers[':scheme'] || ['https','https2'].includes(listener.type) ? 'https' : 'http';
+        const url = new Url(`${scheme}://${authority}${path}`);
 
-        context.tool.context = context;
+        // const cookies = {};
 
-        context.options = Object.assign(self.options || {}, {
-            www: self.www,
-            auth: self.auth,
-            cors: self.cors,
-            cache: self.cache,
-            secure: self.secure
+        Object.defineProperties(context, {
+            // cookies: { enumerable: true, value: cookies },
+            end: { enumerable: true, value: end },
+            url: { enumerable: true, value: url },
+            method: { enumerable: true, value: method },
+            instance: { enumerable: true, value: this },
+            headers: { enumerable: true, value: headers },
+            request: { enumerable: true, value: request },
+            response: { enumerable: true, value: response },
+            listener: { enumerable: true, value: listener },
         });
 
-        const route = await self.router(context);
+        Promise.resolve().then(async () => {
 
-        await context.tool.cache(context.options.cache);
-        await context.tool.head.security();
-
-        if (route) {
-            context.options = Object.assign(context.options, route.options ? route.options : {});
-
-            if (route.auth !== undefined && route.auth !== null) {
-                context.options.auth = route.auth;
-            }
-
-            if (route.cors !== undefined && route.cors !== null) {
-                context.options.cors = route.cors;
-            }
-
-            if (route.cache !== undefined && route.cache !== null) {
-                context.options.cache = route.cache;
-            }
-
-        }
-
-        let rewrite = false;
-        const xfp = context.request.headers['X-Forwarded-Proto'] || context.request.headers['x-forwarded-proto'];
-
-        if (context.options.httpRedirect && xfp === 'http') {
-            context.url.protocol = 'https:';
-            rewrite = true;
-        }
-
-        if (context.options.www && context.url.hostname.startsWith('www.')) {
-            context.url.hostname = context.url.hostname.slice(4);
-            rewrite = true;
-        }
-
-        if (context.url.pathname !== '/' && context.url.pathname.endsWith('/') || context.url.pathname.includes('//')) {
-            context.url.pathname = context.url.pathname.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
-            rewrite = true;
-        }
-
-        if (rewrite) {
-            await context.tool.redirect(context.url.href);
-            return self.ender(context);
-        }
-
-        if (context.options.vhost) {
-            const vhosts = [].concat(context.options.vhost);
-            const hostname = request.headers.host;
-
-            if (!vhosts.includes(hostname)) {
-                context.code = 404;
-                return self.ender(context);
-            }
-
-        }
-
-        if (context.options.auth) {
-
-            await context.tool.auth(context.options.auth);
-
-            if (context.code !== 200) {
-                return self.ender(context);
-            }
-
-            if (!context.credential) {
-                context.code = 500;
-                context.message = 'auth tool credential required';
-                return self.ender(context);
-            }
-
-        }
-
-        // preflight CORS CORBS
-        if (context.method.includes('OPTIONS')) {
-            // await context.tool.head.security();
-
-            context.code = 204;
-            context.message = Http.STATUS_CODES[204];
-            context.response.writeHead(context.code, context.message, context.head);
-            context.response.end();
-
-            return;
-        }
-
-        if (!route) {
-            context.code = 404;
-            return self.ender(context);
-        }
-
-        if (!route.handler) {
-            context.code = 500;
-            context.message = 'route handler required';
-            return self.ender(context);
-        }
-
-        if (typeof route.handler !== 'function') {
-            context.code = 500;
-            context.message = 'route handler requires function';
-            return self.ender(context);
-        }
-
-        if (context.method.includes('POST')) {
-            const payload = await self.payloader(context);
-
-            if (payload === null) {
-                context.code = 413;
-                return self.ender(context);
-            }
-
-            context.payload = payload.toString();
-
-            if (context.payload) {
-
-                if (context.request.headers['content-type'].includes('application/json')) {
-                    context.payload = JSON.parse(context.payload);
+            for (const handler of this.handlers) {
+                if (context.response.closed || context.response.aborted || context.response.destroyed || context.response.writableEnded) {
+                    break;
+                } else {
+                    await (handler.handler || handler).call(handler, context);
                 }
-
-                if (context.request.headers['content-type'].includes('application/x-www-form-urlencoded')) {
-                    context.payload = Querystring.parse(context.payload);
-                }
-
             }
 
-        }
-
-        if (self.event && self.event.handler) {
-            if (typeof self.event.handler === 'function') {
-                await self.event.handler(context);
-            } else if (typeof self.event.handler.before === 'function') {
-                await self.event.handler.before(context);
+            if (!context.response.closed && !context.response.aborted && !context.response.destroyed && !context.response.writableEnded) {
+                context.end();
             }
-        }
 
-        const result = await route.handler(context);
+        }).catch(error => {
+            context.code = 500;
+            context.message = this.debug ? error.message : 'internal server error';
+            context.body = { code: context.code, message: context.message };
+            context.end();
+            this.emit('handler:error', error);
+        });
 
-        Object.assign(context, result);
+    }
 
-        if (self.event && self.event.handler) {
-            if (typeof self.event.handler === 'function') {
-                await self.event.handler(context);
-            } else if (typeof self.event.handler.after === 'function') {
-                await self.event.handler.after(context);
-            }
-        }
+    async handler (handler) {
+        this.handlers.push(handler);
+    }
 
-        await self.ender(context);
+    async listener (listener) {
+        // listener.on('handle', this.emit.bind(this, 'listener:handle', listener));
+        // listener.on('error', this.emit.bind(this, 'listener:error', listener));
+        listener.create(this.handle.bind(this), this.error.bind(this));
+        this.listeners.push(listener);
     }
 
     async open () {
-        const self = this;
-        return new Promise(function (resolve) {
-            const options = { port: self.port, host: self.hostname };
-            self.listener.listen(options, function () {
-                // Object.assign(self.information, self.listener.address());
-                self.emit('open');
-                resolve();
-            });
-        });
+        await Promise.all(this.listeners.map(listener => listener.open()));
+        this.emit('open');
     }
 
     async close () {
-        const self = this;
-        return new Promise(function (resolve) {
-            self.listener.close(function () {
-                self.emit('close');
-                resolve();
-            });
-        });
+        await Promise.all(this.listeners.map(listener => listener.close()));
+        this.emit('close');
     }
 
-};
+}

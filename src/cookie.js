@@ -2,6 +2,8 @@
 
 const QueryString = require('querystring');
 
+throw new Error('not ready');
+
 module.exports = class Cookie {
 
     constructor (option) {
@@ -23,33 +25,26 @@ module.exports = class Cookie {
         this.expires = option.expires || '';
     }
 
-    async set (name, value) {
+    async handler (context) {
 
-        if (!name) {
-            throw new Error('Servey.tool.cookie - name argument required');
+        for (const name in context.cookies) {
+            let cookie = `${name}=${value}`;
+
+            if (this.secure) cookie += '; Secure';
+            if (this.httpOnly) cookie += '; HttpOnly';
+            if (this.path) cookie += `; Path=${this.path}`;
+            if (this.domain) cookie += `; Domain=${this.domain}`;
+            if (this.maxAge) cookie += `; Max-Age=${this.maxAge}`;
+            if (this.expires) cookie += `; Expires=${this.expires}`;
+            if (this.sameSite) cookie += `; SameSite=${this.sameSite}`;
+
+            context.head['set-cookie'] = cookie;
         }
 
-        if (!value) {
-            throw new Error('Servey.tool.cookie - value argument required');
-        }
-
-        let cookie = `${name}=${value}`;
-
-        if (this.secure) cookie += '; Secure';
-        if (this.httpOnly) cookie += '; HttpOnly';
-        if (this.path) cookie += `; Path=${this.path}`;
-        if (this.domain) cookie += `; Domain=${this.domain}`;
-        if (this.maxAge) cookie += `; Max-Age=${this.maxAge}`;
-        if (this.expires) cookie += `; Expires=${this.expires}`;
-        if (this.sameSite) cookie += `; SameSite=${this.sameSite}`;
-
-        this.context.head['set-cookie'] = cookie;
-
-        return this.context;
     }
 
     async entries () {
-        const header = this.context.request.headers['Cookie'] || this.context.request.headers['cookie'] || '';
+        const header = this.context.request.headers['cookie'] || this.context.request.headers['Cookie'] || '';
         const cookies = header.split(/\s*;\s*/);
 
         const result = {};
@@ -66,4 +61,4 @@ module.exports = class Cookie {
         return result;
     }
 
-};
+}

@@ -5,7 +5,6 @@
 - [Cookie Security](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#Security)
 
 ## Headers
-
 <!-- * [`csrf`](https://en.wikipedia.org/wiki/Cross-site_request_forgery)
     * `enabled` (boolean): Enable or disable CSRF. Default value: depends on the environment.
     * `key` (string): The name of the CSRF token added to the model. Default value: `_csrf`.

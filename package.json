@@ -1,18 +1,18 @@
 {
-	"name": "servey",
-	"version": "5.2.6",
-	"description": "Servey | A configuration based async/await server",
-	"main": "dst/server.js",
+	"name": "nety",
+	"version": "0.0.1",
+	"description": "Nety",
+	"main": "dst/index.js",
 	"engines": {
 		"node": ">=7.6.0"
 	},
 	"scripts": {
-        "dst": "cp -r src/. dst",
+        "build": "cp -r src/. dst",
 		"test": "nodemon --watch src --watch tst tst/server.js"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/AlexanderElias/servey.git"
+		"url": "git+https://github.com/vokeio/servey.git"
 	},
 	"keywords": [
 		"static",
@@ -26,11 +26,8 @@
 	"author": "Alexander Elias",
 	"license": "MPL-2.0",
 	"bugs": {
-		"url": "https://github.com/AlexanderElias/servey/issues"
+		"url": "https://github.com/vokeio/servey/issues"
 	},
-	"homepage": "https://github.com/AlexanderElias/servey#readme",
-	"devDependencies": {
-		"toked": "^1.2.0"
-	},
+	"homepage": "https://github.com/vokeio/servey#readme",
 	"dependencies": {}
 }
