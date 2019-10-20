@@ -1,20 +1,22 @@
 'use strict';
 
+const Os = require('os');
 const Path = require('path');
 const Util = require('util');
-const Http = require('http');
+// const Http = require('http');
+// const Https = require('https');
+// const Http2 = require('http2');
 const Url = require('url').URL;
-const Events = require('events');
 const Stream = require('stream');
+// const Events = require('events');
 const Querystring = require('querystring');
 
 const Mime = require('./mime.js');
 const Status = require('./status.js');
 
-module.exports = class Servey extends Events {
+module.exports = class HttpServer {
 
-    constructor (options = {}) {
-        super();
+    constructor ( options = {} ) {
 
         this.xss = true;
         this.hsts = true;
@@ -25,13 +27,49 @@ module.exports = class Servey extends Events {
         this.mime = Mime;
         this.status = Status;
 
-        this.debug = options.debug || false;
+        // this.host = null;
+        // this.port = null;
+        this.family = null;
+        this.address = null;
+        this.options = { ...options };
+        this.port = this.options.port || 0;
+        this.host = this.options.host || Os.hostname() || 'localhost';
 
-        this.charset = options.charset || 'charset=utf8';
-        this.contentType = options.contentType || 'text/plain';
+        // this.version = this.options.version || 1;
+        // this.secure = this.options.secure || false;
+        this.type = this.options.type || 'http';
+        this.charset = this.options.charset || 'charset=utf8';
+        this.contentType = this.options.contentType || 'text/plain';
 
-        this.handlers = options.handlers || [];
-        this.listeners = options.listeners || [];
+        delete this.options.type;
+        delete this.options.port;
+        // delete this.options.secure;
+        delete this.options.charset;
+        // delete this.options.version;
+        delete this.options.host;
+        delete this.options.contentType;
+
+        // if (this.version === 1) {
+        //     if (this.secure) {
+        //         this.listener = Https.createServer(options, this.listen.bind(this));
+        //     } else {
+        //         this.listener = Http.createServer(options, this.listen.bind(this));
+        //     }
+        // } else if (this.version === 2) {
+        //
+        //     options.allowHTTP1 = 'allowHTTP1' in options ? options.allowHTTP1 : true;
+        //
+        //     if (this.secure) {
+        //         this.listener = Http2.createSecureServer(options, this.listen.bind(this));
+        //     } else {
+        //         this.listener = Http2.createServer(options, this.listen.bind(this));
+        //     }
+        //
+        // } else {
+        //     throw new Error('HttpServer - invalid version');
+        // }
+        //
+        // this.listener.on('error', this.emit.bind(this, 'listener:error'));
     }
 
     head () {
@@ -106,7 +144,10 @@ module.exports = class Servey extends Events {
         context.response.end(context.body);
     }
 
-    handle (listener, request, response) {
+    async handler (manager, request, response) {
+        const { plugins, debug } = manager;
+
+        throw new Error('oops');
 
         const body = null;
         const code = null;
@@ -120,7 +161,7 @@ module.exports = class Servey extends Events {
         const path = headers[':path'] || request.url;
         const method = (headers[':method'] || request.method).toLowerCase();
         const authority = (headers[':authority'] || headers['host']).toLowerCase();
-        const scheme = headers[':scheme'] || ['https','https2'].includes(listener.type) ? 'https' : 'http';
+        const scheme = headers[':scheme'] || this.secure ? 'https' : 'http';
         const url = new Url(`${scheme}://${authority}${path}`);
 
         // const cookies = {};
@@ -134,16 +175,16 @@ module.exports = class Servey extends Events {
             headers: { enumerable: true, value: headers },
             request: { enumerable: true, value: request },
             response: { enumerable: true, value: response },
-            listener: { enumerable: true, value: listener },
+            listener: { enumerable: true, value: this },
         });
 
-        Promise.resolve().then(async () => {
+        try {
 
-            for (const handler of this.handlers) {
+            for (const plugin of plugins) {
                 if (context.response.closed || context.response.aborted || context.response.destroyed || context.response.writableEnded) {
                     break;
                 } else {
-                    await (handler.handler || handler).call(handler, context);
+                    await plugin.handler.call(plugin, context);
                 }
             }
 
@@ -151,35 +192,14 @@ module.exports = class Servey extends Events {
                 context.end();
             }
 
-        }).catch(error => {
+        } catch (error) {
             context.code = 500;
             context.message = this.debug ? error.message : 'internal server error';
             context.body = { code: context.code, message: context.message };
             context.end();
-            this.emit('handler:error', error);
-        });
+            console.error(error);
+        }
 
-    }
-
-    async handler (handler) {
-        this.handlers.push(handler);
-    }
-
-    async listener (listener) {
-        // listener.on('handle', this.emit.bind(this, 'listener:handle', listener));
-        // listener.on('error', this.emit.bind(this, 'listener:error', listener));
-        listener.create(this.handle.bind(this), this.error.bind(this));
-        this.listeners.push(listener);
-    }
-
-    async open () {
-        await Promise.all(this.listeners.map(listener => listener.open()));
-        this.emit('open');
-    }
-
-    async close () {
-        await Promise.all(this.listeners.map(listener => listener.close()));
-        this.emit('close');
     }
 
 }
