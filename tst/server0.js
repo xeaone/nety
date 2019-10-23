@@ -28,12 +28,6 @@ Promise.resolve().then(async () => {
     // const cert = Fs.readFileSync('localhost-cert.pem');
     // const key = Fs.readFileSync('localhost-privkey.pem');
 
-    const debug = process.env.DEBUG;
-    const hostname = debug ? 'localhost' : undefined;
-
-    const server0 = new Nety.HttpServer({ port: 8080, hostname });
-    const server1 = new Nety.HttpServer({ port: 8081, hostname });
-
     // const compress = new Compress();
     const payloader = new Payloader();
     const normalizer = new Normalizer();
@@ -43,23 +37,22 @@ Promise.resolve().then(async () => {
     //     vhost: 'cats.com'
     // });
 
-    const manager = new Nety.Controller({ debug });
+    const server0 = new Nety.HttpServer({ port: 8080, host: 'localhost', debug: true });
+    const server1 = new Nety.HttpServer({ port: 8081, host: 'localhost', debug: true });
 
-    await manager.server(server0);
-    await manager.server(server1);
+    await server0.plugin(normalizer);
+    await server0.plugin(payloader);
 
-    await manager.plugin(normalizer);
-    await manager.plugin(payloader);
+    await server1.plugin(normalizer);
+    await server1.plugin(payloader);
 
-    // manager.on('error', console.error);
-    // manager.on('handler:error', console.error);
-    // manager.on('listener:error', console.error);
+    await server0.open();
+    await server1.open();
 
-    await manager.open();
-
-    manager.servers.forEach(server => console.log(`Host: ${server.host}, Address: ${server.address}, Port: ${server.port}`));
+    console.log(`Host: ${server0.host}, Address: ${server0.address}, Port: ${server0.port}`);
+    console.log(`Host: ${server1.host}, Address: ${server1.address}, Port: ${server1.port}`);
 
 }).catch(error => {
     console.log('!           TOP          !');
-    // console.error(error);
+    console.error(error);
 });

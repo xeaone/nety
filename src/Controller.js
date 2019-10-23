@@ -15,19 +15,6 @@ module.exports = class Controller {
         this.clients = options.clients || [];
     }
 
-    async plug () {
-        const plugins = this.plugins;
-        for (const plugin of plugins) {
-
-            if (context.response.closed || context.response.aborted || context.response.destroyed || context.response.writableEnded) {
-                break;
-            } else {
-                await (handler.handler || handler).call(handler, context);
-            }
-
-        }
-    }
-
     async plugin (plugin) {
         const { handler } = typeof plugin === 'function' ? { handler: plugin } : plugin;
         if (!handler) throw new Error('Controller.plugin - handler required');
@@ -35,7 +22,7 @@ module.exports = class Controller {
     }
 
     async server (server) {
-        const self = this;
+        let listener;
         const { type, path, port, host, handler, options } = server;
 
         if (!type) throw new Error('Controller.server - type required');
@@ -43,31 +30,14 @@ module.exports = class Controller {
         if (typeof path !== 'string' && typeof port !== 'number') throw new Error('Controller.server - port or path required');
         if (!(['net','http','https','http2','https2'].includes(type))) throw new Error('Controller.server - type invalid');
 
-        const handle = function () {
-            Promise.resolve().then(() => handler.apply(server, [self].concat(arguments))).catch(error => { throw error; });
-
-            // handler.apply(server, [self].concat(arguments));
-            // handler.apply(server, [self].concat(arguments)).catch(error => { throw error; });
-            // Promise.resolve().then(() => handler.apply(server, [self].concat(arguments))).catch(error => { throw error; });
-            // try {
-            // } catch (e) {
-            //     console.log(e);
-            //     throw 'stop'
-            // }
-        };
-
-        let listener;
         switch (type) {
-            // case 'net': listener = Net.createServer(options, handler.bind(server, this)); break;
-            // case 'http': listener = Http.createServer(options, handler.bind(server, this)); break;
-            case 'http': listener = Http.createServer(options, handle); break;
+            case 'http': listener = Http.createServer(options, handler.bind(server, this)); break;
             case 'https': listener = Https.createServer(options, handler.bind(server, this)); break;
             case 'http2': listener = Http2.createServer(options, handler.bind(server, this)); break;
             case 'https2': listener = Http2.createSecureServer(options, handler.bind(server, this)); break;
             default: listener = Net.createServer(options, handler.bind(server, this));
         }
 
-        // listener.on('error', error => { throw error; });
         this.servers.push({ type, path, port, host, listener });
     }
 

@@ -12,7 +12,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/vokeio/servey.git"
+		"url": "git+https://github.com/vokeio/nety.git"
 	},
 	"keywords": [
 		"static",
@@ -26,8 +26,8 @@
 	"author": "Alexander Elias",
 	"license": "MPL-2.0",
 	"bugs": {
-		"url": "https://github.com/vokeio/servey/issues"
+		"url": "https://github.com/vokeio/nety/issues"
 	},
-	"homepage": "https://github.com/vokeio/servey#readme",
+	"homepage": "https://github.com/vokeio/nety#readme",
 	"dependencies": {}
 }

@@ -3,12 +3,11 @@
 const Os = require('os');
 const Path = require('path');
 const Util = require('util');
-// const Http = require('http');
-// const Https = require('https');
-// const Http2 = require('http2');
+const Http = require('http');
+const Https = require('https');
+const Http2 = require('http2');
 const Url = require('url').URL;
 const Stream = require('stream');
-// const Events = require('events');
 const Querystring = require('querystring');
 
 const Mime = require('./mime.js');
@@ -17,6 +16,7 @@ const Status = require('./status.js');
 module.exports = class HttpServer {
 
     constructor ( options = {} ) {
+        this.options = { ...options };
 
         this.xss = true;
         this.hsts = true;
@@ -27,49 +27,32 @@ module.exports = class HttpServer {
         this.mime = Mime;
         this.status = Status;
 
-        // this.host = null;
-        // this.port = null;
         this.family = null;
         this.address = null;
-        this.options = { ...options };
         this.port = this.options.port || 0;
+        this.debug = this.options.debug || false;
+        this.plugins = this.options.plugins || [];
         this.host = this.options.host || Os.hostname() || 'localhost';
 
-        // this.version = this.options.version || 1;
-        // this.secure = this.options.secure || false;
-        this.type = this.options.type || 'http';
+        this.version = this.options.version || 1;
+        this.secure = this.options.secure || false;
         this.charset = this.options.charset || 'charset=utf8';
         this.contentType = this.options.contentType || 'text/plain';
 
-        delete this.options.type;
         delete this.options.port;
-        // delete this.options.secure;
-        delete this.options.charset;
-        // delete this.options.version;
         delete this.options.host;
+        delete this.options.debug;
+        delete this.options.secure;
+        delete this.options.charset;
+        delete this.options.version;
+        delete this.options.plugins;
         delete this.options.contentType;
 
-        // if (this.version === 1) {
-        //     if (this.secure) {
-        //         this.listener = Https.createServer(options, this.listen.bind(this));
-        //     } else {
-        //         this.listener = Http.createServer(options, this.listen.bind(this));
-        //     }
-        // } else if (this.version === 2) {
-        //
-        //     options.allowHTTP1 = 'allowHTTP1' in options ? options.allowHTTP1 : true;
-        //
-        //     if (this.secure) {
-        //         this.listener = Http2.createSecureServer(options, this.listen.bind(this));
-        //     } else {
-        //         this.listener = Http2.createServer(options, this.listen.bind(this));
-        //     }
-        //
-        // } else {
-        //     throw new Error('HttpServer - invalid version');
-        // }
-        //
-        // this.listener.on('error', this.emit.bind(this, 'listener:error'));
+        if (this.version === 1 && this.secure === false) this.listener = Http.createServer(this.options, this.handler.bind(this));
+        else if (this.version === 1 && this.secure === true) this.listener = Https.createServer(this.options, this.handler.bind(this));
+        else if (this.version === 2 && this.secure === false) this.listener = Http2.createServer(this.options, this.handler.bind(this));
+        else if (this.version === 2 && this.secure === true) this.listener = Http2.createSecureServer(this.options, this.handler.bind(this));
+
     }
 
     head () {
@@ -144,18 +127,10 @@ module.exports = class HttpServer {
         context.response.end(context.body);
     }
 
-    async handler (manager, request, response) {
-        const { plugins, debug } = manager;
+    async handler (request, response) {
 
-        throw new Error('oops');
-
-        const body = null;
-        const code = null;
-        const message = null;
-        const head = this.head();
-        const context = { code, body, message, head };
+        const context = { code: null, body: null, message: null, head: this.head() };
         const end = this.end.bind(this, context);
-
         const headers = request.headers;
 
         const path = headers[':path'] || request.url;
@@ -179,6 +154,7 @@ module.exports = class HttpServer {
         });
 
         try {
+            const plugins = this.plugins;
 
             for (const plugin of plugins) {
                 if (context.response.closed || context.response.aborted || context.response.destroyed || context.response.writableEnded) {
@@ -200,6 +176,33 @@ module.exports = class HttpServer {
             console.error(error);
         }
 
+    }
+
+    async plugin (plugin) {
+        const { handler } = typeof plugin === 'function' ? { handler: plugin } : plugin;
+        if (!handler) throw new Error('Nety.plugin - handler required');
+        this.plugins.push({ handler, plugin });
+    }
+
+    async open () {
+        return new Promise(resolve => {
+            this.listener.listen(this.port, this.host, () => {
+                const info = this.listener.address();
+                this.port = info.port;
+                this.family = info.family;
+                this.address = info.address;
+                this.host = this.host || info.address;
+                resolve();
+            });
+        });
+    }
+
+    async close () {
+        return new Promise(resolve => {
+            this.listener.close(() => {
+                resolve();
+            });
+        });
     }
 
 }
