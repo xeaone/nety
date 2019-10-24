@@ -119,4 +119,4 @@ module.exports = {
 
     'default': 'application/octet-stream'
 
-};
+}

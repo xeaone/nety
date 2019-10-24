@@ -2,22 +2,21 @@
 
 const Querystring = require('querystring');
 
-module.exports = class Payloader {
+module.exports = class Payload {
 
-    constructor (options) {
-        options = options || {};
+    constructor (options = {}) {
         this.maxBytes = options.maxBytes || 1e6; // 1mb
     }
 
-    async payloader (context) {
-        const self = this;
-        return new Promise(function (resolve, reject) {
+    async payload (context) {
+        return new Promise((resolve, reject) => {
             const chunks = [];
 
-            context.request.on('error', reject);
+            context.request.on('end', () => resolve(chunks));
+            context.request.on('error', (error) => reject(error));
 
-            context.request.on('data', function (chunk) {
-                if (chunks.byteLength > self.maxBytes) {
+            context.request.on('data', (chunk) => {
+                if (chunks.byteLength > this.maxBytes) {
                     context.request.connection.destroy();
                     resolve(null);
                 } else {
@@ -25,24 +24,17 @@ module.exports = class Payloader {
                 }
             });
 
-            context.request.on('end', function () {
-                resolve(chunks);
-            });
-
         });
     }
 
-    async handler (context) {
-        const self = this;
+    async handle (context) {
 
         if (context.method !== 'post') return;
 
-        const payload = await self.payloader(context);
+        const payload = await this.payload(context);
 
         if (payload === null) {
-            context.response.writeHead(413);
-            context.response.end('payloader max bytes');
-            return;
+            return context.code(413).end();
         }
 
         context.payload = payload.toString();
@@ -60,6 +52,5 @@ module.exports = class Payloader {
         }
 
     }
-
 
 }

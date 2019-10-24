@@ -1,9 +1,8 @@
 'use strict';
 
-module.exports = class Cacher {
+module.exports = class Cache {
 
-    constructor (options) {
-        options = options || {};
+    constructor (options = {}) {
 
         if (!options.control) {
             this.control = 'max-age=3600';
@@ -17,8 +16,8 @@ module.exports = class Cacher {
 
     }
 
-    async handler (context) {
-        this.context.head['cache-control'] = this.control;
+    async handle (context) {
+        context.head['cache-control'] = this.control;
     }
 
 }

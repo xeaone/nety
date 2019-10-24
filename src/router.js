@@ -2,8 +2,7 @@
 
 module.exports = class Router {
 
-    constructor (options) {
-        options = options || {};
+    constructor (options = {}) {
         this.vhost = options.vhost || '';
         this.routes = options.routes || {};
     }
@@ -65,7 +64,7 @@ module.exports = class Router {
         return false;
     }
 
-    async handler (context) {
+    async handle (context) {
         const routes = this.routes;
         const requestMethod = context.method;
         const requestPath = context.url.pathname;

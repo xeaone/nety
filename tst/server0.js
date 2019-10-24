@@ -2,10 +2,8 @@
 
 const Fs = require('fs');
 const Nety = require('../src');
-const Router = require('../src/router.js');
-const Compress = require('../src/compress.js');
-const Payloader = require('../src/payloader.js');
-const Normalizer = require('../src/normalizer.js');
+
+const { Controller, HttpServer, Payload, Normalize } = Nety;
 
 Promise.resolve().then(async () => {
 
@@ -29,28 +27,28 @@ Promise.resolve().then(async () => {
     // const key = Fs.readFileSync('localhost-privkey.pem');
 
     // const compress = new Compress();
-    const payloader = new Payloader();
-    const normalizer = new Normalizer();
+    const normalize = new Normalize();
+    const payload = new Payload();
 
     // const router = new Router({
     //     routes,
     //     vhost: 'cats.com'
     // });
 
-    const server0 = new Nety.HttpServer({ port: 8080, host: 'localhost', debug: true });
-    const server1 = new Nety.HttpServer({ port: 8081, host: 'localhost', debug: true });
+    const controller = new Controller({ debug: true, host: 'localhost' });
 
-    await server0.plugin(normalizer);
-    await server0.plugin(payloader);
+    const server0 = new HttpServer({ port: 8080 });
+    const server1 = new HttpServer({ port: 8081 });
 
-    await server1.plugin(normalizer);
-    await server1.plugin(payloader);
+    await controller.handle(server0);
+    await controller.handle(server1);
 
-    await server0.open();
-    await server1.open();
+    await controller.plugin(normalize);
+    await controller.plugin(payload);
 
-    console.log(`Host: ${server0.host}, Address: ${server0.address}, Port: ${server0.port}`);
-    console.log(`Host: ${server1.host}, Address: ${server1.address}, Port: ${server1.port}`);
+    await controller.open();
+
+    controller.handles.forEach(server => console.log(`Host: ${server.host}, Address: ${server.address}, Port: ${server.port}`));
 
 }).catch(error => {
     console.log('!           TOP          !');

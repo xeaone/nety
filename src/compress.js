@@ -10,12 +10,13 @@ const Defalte = Util.promisify(Zlib.deflate);
 
 module.exports = class Compress {
 
-    constructor (options) {
-        options = options || {};
+    constructor (options = {}) {
+        console.warn('todo: compres specific files');
+        console.warn('todo: cache compressed version');
         this.buffers = new Map();
     }
 
-    async handler (context) {
+    async handle (context) {
 
         if (context.headers.range) return;
 

@@ -4,8 +4,7 @@
 
 module.exports = class Preflight {
 
-    constructor (options) {
-        options = options || {};
+    constructor (options = {}) {
         this.origin = options.origin
         this.age = options.age || 31536000;
         this.credentials = options.credentials || 'true';
@@ -14,14 +13,14 @@ module.exports = class Preflight {
         this.methods = options.methods || 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD';
     }
 
-    async handler (context) {
+    async handle (context) {
 
-        this.context.head['access-control-max-age'] = this.age;
-        this.context.head['access-control-expose-headers'] = this.expose;
-        this.context.head['access-control-allow-headers'] = this.headers;
-        this.context.head['access-control-allow-methods'] = this.methods;
-        this.context.head['access-control-allow-credentials'] = this.credentials;
-        this.context.head['access-control-allow-origin'] = this.origin || context.url.hostname;
+        context.head['access-control-max-age'] = this.age;
+        context.head['access-control-expose-headers'] = this.expose;
+        context.head['access-control-allow-headers'] = this.headers;
+        context.head['access-control-allow-methods'] = this.methods;
+        context.head['access-control-allow-credentials'] = this.credentials;
+        context.head['access-control-allow-origin'] = this.origin || context.url.hostname;
 
         if (context.method !== 'options') return;
 
@@ -29,9 +28,7 @@ module.exports = class Preflight {
         // Access-Control-Request-Method, Access-Control-Request-Headers, Origin
 
         context.code = 204;
-        context.message = context.instance.status[context.code];
-        context.response.writeHead(context.code, context.head);
-        context.response.end();
+        context.end();
     }
 
 }

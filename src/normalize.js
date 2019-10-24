@@ -2,14 +2,12 @@
 
 const Url = require('url').URL;
 
-module.exports = class Normalizer {
+module.exports = class Normalize {
 
-    // constructor () {}
-
-    async handler (context) {
+    async handle (context) {
 
         let redirect = false;
-        let location = new Url(context.url.href);
+        const location = new Url(context.url.href);
 
         if (location.hostname.startsWith('www.')) {
             redirect = true;
@@ -22,8 +20,7 @@ module.exports = class Normalizer {
         }
 
         if (redirect) {
-            context.response.writeHead(301, { 'Location': location.href });
-            context.response.end();
+            context.code(301).head('location', location.href).end();
         }
 
     }
