@@ -8,7 +8,7 @@ module.exports = class Cookie {
 
         this.path = options.path || '';
         this.domain = options.domain || '';
-        this.name = options.name || 'cookie';
+        // this.name = options.name || 'cookie';
         // this.cookies = options.cookies || {};
         this.sameSite = options.sameSite || 'Strict';
         this.httpOnly = options.httpOnly === false ? false : true;
@@ -23,11 +23,7 @@ module.exports = class Cookie {
         this.expires = options.expires || '';
     }
 
-    async get (context, name, value) {
-        console.warn('todo: need to implement cookie get');
-    }
-
-    async set (context, name, value) {
+    async add (context, name, value) {
         let cookie = `${name}=${value}`;
 
         if (this.secure) cookie += '; Secure';
@@ -38,23 +34,42 @@ module.exports = class Cookie {
         if (this.expires) cookie += `; Expires=${this.expires}`;
         if (this.sameSite) cookie += `; SameSite=${this.sameSite}`;
 
-        context.head['set-cookie'].push(cookie);
+        const header = context.response.getHeader('set-cookie');
+
+        if (header) {
+            
+            if (typeof header === 'string') {
+                context.response.setHeader('set-cookie', [header]);
+            }
+
+            context.response.getHeader('set-cookie').push(cookie);
+        } else {
+            context.response.setHeader('set-cookie', cookie);
+        }
+
+    }
+
+    async entries (context) {
+        const header = context.request.headers['cookie'] || '';
+        const cookies = header.split(/\s*;\s*/);
+        const entries = {};
+
+        for (const cookie of cookies) {
+            const [ name, value ] = cookie.split(/\s*=\s*/);
+            if (name in entries === false) {
+                entries[name] = QueryString.unescape(value);
+            }
+        }
+
+        return Object.freeze(entries);
     }
 
     async handle (context) {
-        context.head['set-cookie'] = context.head['set-cookie'] || [];
 
-        const set = this.set.bind(this, context);
-        const get = this.get.bind(this, context);
-        const cookies = this.cookies;
+        const entries = await this.entries(context);
+        const add = this.add.bind(this, context);
 
-        for (const name in cookies) {
-            const value = cookies[name];
-            let cookie = `${name}=${cookies[name]}`;
-            this.set(context, name, value);
-        }
-
-        return { set, get };
+        return { add, entries };
     }
 
 }

@@ -8,7 +8,7 @@ module.exports = class Payload {
         this.maxBytes = options.maxBytes || 1e6; // 1mb
     }
 
-    async payload (context) {
+    async data (context) {
         return new Promise((resolve, reject) => {
             const chunks = [];
 
@@ -29,28 +29,26 @@ module.exports = class Payload {
 
     async handle (context) {
 
-        if (context.method !== 'post') return;
+        if (context.method !== 'post') return {};
 
-        const payload = await this.payload(context);
+        let data = await this.data(context);
 
-        if (payload === null) {
-            return context.code(413).end();
+        if (data === null) {
+            context.code(413).end();
+            return {};
         }
 
-        context.payload = payload.toString();
+        const type = context.request.headers['content-type'];
 
-        if (context.payload) {
+        data = data.toString();
 
-            if (context.headers['content-type'].includes('application/json')) {
-                context.payload = JSON.parse(context.payload);
-            }
-
-            if (context.headers['content-type'].includes('application/x-www-form-urlencoded')) {
-                context.payload = Querystring.parse(context.payload);
-            }
-
+        if (type.includes('application/json')) {
+            data = JSON.parse(data || '{}');
+        } else if (type.includes('application/x-www-form-urlencoded')) {
+            data = Querystring.parse(data);
         }
 
+        return data || {};
     }
 
 }

@@ -8,9 +8,9 @@ const Http2 = require('http2');
 const Url = require('url').URL;
 const Stream = require('stream');
 
-const Mime = require('./mime.js');
-const Status = require('./status.js');
-const HttpContext = require('./http-context.js');
+const Mime = require('../mime.js');
+const Status = require('../status.js');
+const Context = require('./context.js');
 
 module.exports = class HttpServer {
 
@@ -29,6 +29,7 @@ module.exports = class HttpServer {
         this.options = options.server || {};
         this.version = options.version || 1;
         this.secure = options.secure || false;
+
         this.charset = options.charset || 'charset=utf8';
         this.contentType = options.contentType || 'text/plain';
 
@@ -39,22 +40,26 @@ module.exports = class HttpServer {
         else if (this.version === 2 && this.secure === false) this.listener = Http2.createServer(this.options, this.handle.bind(this));
         else if (this.version === 2 && this.secure === true) this.listener = Http2.createSecureServer(this.options, this.handle.bind(this));
 
+        this.xss = options.xss || '1; mode=block';
+        this.xframe = options.xframe || 'SAMEORIGIN';
+        this.xcontent = options.xcontent || 'nosniff';
+        this.xdownload = options.xdownload || 'noopen';
+        this.hsts = options.hsts || 'max-age=31536000; includeSubDomains; preload';
+
     }
 
     async handle (request, response) {
 
-        console.warn('todo: cookies');
         console.warn('todo: query / params');
 
-        const instance = this;
-        const head = this.head;
-        const cookie = this.cookie;
+        if (this.xss) response.setHeader('x-xss-protection', this.xss);
+        if (this.xframe) response.setHeader('x-frame-options', this.xframe);
+        if (this.hsts) response.setHeader('strict-transport-security', this.hsts);
+        if (this.xdownload) response.setHeader('x-download-options', this.xdownload);
+        if (this.xcontent) response.setHeader('x-content-type-options', this.xcontent);
 
-        const context = new HttpContext({
-            instance,
-            head, cookie,
-            request, response,
-        });
+        const instance = this;
+        const context = new Context({ request, response, instance });
 
         try {
             const plugins = this.plugins;
@@ -63,14 +68,8 @@ module.exports = class HttpServer {
                 if (response.closed || response.aborted || response.destroyed || response.writableEnded) {
                     break;
                 } else {
-                    await plugin.handle.call(plugin, context);
-                    // console.warn('todo: camcelcase the plugin name');
-                    // const name = plugin.name;
-                    // const value = await plugin.handle.call(plugin, context);
-                    // if (value !== undefined) {
-                    //     const property = { enumerable: true, value };
-                    //     Object.defineProperty(context, name, property);
-                    // }
+                    const value = await plugin.handle.call(plugin, context);
+                    context.set(plugin.name, value);
                 }
             }
 
@@ -89,10 +88,16 @@ module.exports = class HttpServer {
     async plugin (plugin) {
 
         if (typeof plugin === 'function') {
-            if (!plugin.name) throw new Error('plugin - plugin name required');
             plugin = { handle: plugin, name: plugin.name };
+        } else {
+            plugin.name = plugin.name || plugin.constructor.name;
         }
 
+        if (!plugin.name) {
+            throw new Error('plugin - plugin name required');
+        }
+
+        plugin.name = `${plugin.name.charAt(0).toLowerCase()}${plugin.name.slice(1)}`;
         this.plugins.push(plugin);
     }
 

@@ -3,16 +3,16 @@
 module.exports = {
 
     Controller: require('./controller.js'),
-    HttpServer: require('./http-server.js'),
 
-    // plugins
-    Cache: require('./cache.js'),
-    Compress: require('./compress.js'),
-    Cookie: require('./cookie.js'),
-    Normalize: require('./normalize.js'),
-    Payload: require('./payload.js'),
-    Prefligh: require('./preflight.js'),
-    Router: require('./router.js'),
+    // http server
+    HttpServer: require('./http-server/server.js'),
+    HttpServerCache: require('./http-server/cache.js'),
+    HttpServerCompress: require('./http-server/compress.js'),
+    HttpServerCookie: require('./http-server/cookie.js'),
+    HttpServerNormalize: require('./http-server/normalize.js'),
+    HttpServerPayload: require('./http-server/payload.js'),
+    HttpServerPreflight: require('./http-server/preflight.js'),
+    HttpServerRouter: require('./http-server/router.js'),
 
     // data
     mime: require('./mime.js'),

@@ -17,7 +17,7 @@ module.exports = class Cache {
     }
 
     async handle (context) {
-        context.head['cache-control'] = this.control;
+        context.head('cache-control', this.control);
     }
 
 }

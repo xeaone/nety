@@ -12,8 +12,19 @@ module.exports = class Controller {
 
     }
 
+    async unplug () {
+
+    }
+
     async plugin (plugin) {
-        plugin = typeof plugin === 'function' ? { handle: plugin } : plugin;
+        if (typeof plugin === 'function') {
+            plugin = { handle: plugin, name: plugin.name };
+        } else {
+            plugin.name = plugin.name || plugin.constructor.name;
+        }
+
+        if (!plugin.name) throw new Error('plugin - plugin name required');
+        plugin.name = `${plugin.name.charAt(0).toLowerCase()}${plugin.name.slice(1)}`;
         this.plugins.push(plugin);
         this.handles.forEach(handle => handle.plugins.push(plugin));
     }
