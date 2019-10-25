@@ -8,8 +8,6 @@ module.exports = class Cookie {
 
         this.path = options.path || '';
         this.domain = options.domain || '';
-        // this.name = options.name || 'cookie';
-        // this.cookies = options.cookies || {};
         this.sameSite = options.sameSite || 'Strict';
         this.httpOnly = options.httpOnly === false ? false : true;
         this.secure = options.secure === undefined ? false : options.secure === true ? true : false;
@@ -37,7 +35,7 @@ module.exports = class Cookie {
         const header = context.response.getHeader('set-cookie');
 
         if (header) {
-            
+
             if (typeof header === 'string') {
                 context.response.setHeader('set-cookie', [header]);
             }

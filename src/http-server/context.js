@@ -24,7 +24,6 @@ const HeadOptions = function (options = {}) {
 module.exports = class Context {
 
     constructor (options = {}) {
-
         this.mime = Mime;
         this.status = Status;
         this.request = options.request;
@@ -37,7 +36,6 @@ module.exports = class Context {
         this.method = this.request.headers[':method'] || this.request.method.toLowerCase();
         this.authority = this.request.headers[':authority'] || this.request.headers['host'];
         this.url = new Url(`${this.scheme}://${this.authority}${this.path}`);
-
     }
 
     set (name, value) {
@@ -75,11 +73,18 @@ module.exports = class Context {
     }
 
     body (body) {
+        if (body) {
+            this._body = body;
+            return this;
+        } else {
+            return this._body;
+        }
+    }
 
+    end () {
         const code = this.response.statusCode || 200;
         const message = this.response.statusMessage || this.status[code] || '';
-        
-        body = body || { code, message };
+        const body = this._body || { code, message };
 
         if (!this.response.hasHeader('content-type')) {
             const path = body.path || this.url.pathname;
@@ -105,11 +110,6 @@ module.exports = class Context {
             this.response.write(body);
         }
 
-        return this;
-    }
-
-    end () {
-        this.body.apply(this, arguments);
         return new Promise((resolve) => this.response.end(() => resolve()));
     }
 

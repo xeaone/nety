@@ -27,7 +27,7 @@ module.exports = class Preflight {
         // might need to check the following headers
         // Access-Control-Request-Method, Access-Control-Request-Headers, Origin
 
-        context.code(204).end();
+        await context.code(204).end();
     }
 
 }

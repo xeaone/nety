@@ -20,7 +20,7 @@ module.exports = class Normalize {
         }
 
         if (redirect) {
-            context.code(301).head('location', location.href).end();
+            await context.code(301).head('location', location.href).end();
         }
 
     }

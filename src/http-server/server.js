@@ -74,13 +74,13 @@ module.exports = class HttpServer {
             }
 
             if (!response.closed && !response.aborted && !response.destroyed && !response.writableEnded) {
-                context.end();
+                return context.end();
             }
 
         } catch (error) {
-            const message = this.debug ? error.message : 'internal server error';
-            context.code(500).message(message).end();
             console.error(error);
+            const message = this.debug ? error.message : 'internal server error';
+            return context.code(500).message(message).end();
         }
 
     }
