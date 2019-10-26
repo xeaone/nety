@@ -64,7 +64,7 @@ Promise.resolve().then(async () => {
         // context.type('html').body(`<h1>Hello World<h1>`);
     });
 
-    // await controller.plugin(compress);
+    await controller.plugin(compress);
 
     await controller.open();
 
