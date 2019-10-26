@@ -8,8 +8,8 @@ const Http2 = require('http2');
 const Url = require('url').URL;
 const Stream = require('stream');
 
-const Mime = require('../mime.js');
-const Status = require('../status.js');
+const Mime = require('../../mime.js');
+const Status = require('../../status.js');
 const Context = require('./context.js');
 
 module.exports = class HttpServer {

@@ -29,20 +29,22 @@ module.exports = class Compress {
         const encodings = encoding.split(/\s*,\s*/);
 
         if (encodings.includes('deflate')) {
-            context.head('content-encoding', 'deflate');
 
             if (typeof body === 'string') {
+                context.head('content-encoding', 'deflate');
                 context.body(await Defalte(body));
             } else if (body instanceof Stream.Readable) {
+                context.head('content-encoding', 'deflate');
                 context.body(body.pipe(Zlib.createDeflate()));
             }
 
         } else if (encodings.includes('gzip')) {
-            context.head('content-encoding', 'gzip');
 
             if (typeof body === 'string') {
+                context.head('content-encoding', 'gzip');
                 context.body(await Gzip(body));
             } else if (body instanceof Stream.Readable) {
+                context.head('content-encoding', 'gzip');
                 context.body(body.pipe(Zlib.createGzip()));
             }
 

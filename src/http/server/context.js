@@ -6,8 +6,8 @@ const Url = require('url').URL;
 const Stream = require('stream');
 const Querystring = require('querystring');
 
-const Mime = require('../mime.js');
-const Status = require('../status.js');
+const Mime = require('../../mime.js');
+const Status = require('../../status.js');
 
 const HeadOptions = function (options = {}) {
     const result = {};
@@ -29,6 +29,7 @@ module.exports = class Context {
         this.request = options.request;
         this.response = options.response;
         this.instance = options.instance;
+        this.content = options.content || ''
         this.charset = options.charset || 'charset=utf8';
         this.headers = Object.freeze({ ...this.request.headers });
         this.path = this.request.headers[':path'] || this.request.url;
@@ -43,6 +44,16 @@ module.exports = class Context {
         const enumerable = true;
         const property = { enumerable, value };
         Object.defineProperty(this, name, property);
+    }
+
+    type (type) {
+        if (type) {
+            const mime = this.mime[type] || this.mime['default'];
+            this.response.setHeader('content-type', `${mime};${this.charset}`);
+            return this;
+        } else {
+            this.response.getHeader('content-type');
+        }
     }
 
     head (name, value) {
@@ -81,32 +92,36 @@ module.exports = class Context {
         }
     }
 
-    end () {
+    end (body) {
+
         const code = this.response.statusCode || 200;
         const message = this.response.statusMessage || this.status[code] || '';
-        const body = this._body || { code, message };
+
+        this._body = body || this._body;
+        body = body || this._body || { code, message };
 
         if (!this.response.hasHeader('content-type')) {
             const path = body.path || this.url.pathname;
             const extension = Path.extname(path).slice(1);
-            const type = extension || typeof body === 'string' ? 'txt' : 'json';
-            this.response.setHeader('content-type', `${this.mime[type]};${this.charset}`);
+            const mime = this.mime[extension || 'default'];
+            this.response.setHeader('content-type', `${mime};${this.charset}`);
         }
 
         if (body instanceof Stream.Readable) {
-            // this.response.setHeader('transfer-encoding', 'chunked');
+            // console.log(this.response.getHeader('content-type'));
+            this.response.setHeader('transfer-encoding', 'chunked');
+            console.log(body);
             body.pipe(this.response);
+        } else if (body instanceof Buffer) {
+            this.response.setHeader('content-length', body.length);
+            this.response.write(body);
         } else if (typeof body === 'object') {
             body = JSON.stringify(body);
+            this.response.setHeader('content-type', `${this.mime['json']};${this.charset}`);
             this.response.setHeader('content-length', Buffer.byteLength(body));
             this.response.write(body);
         } else if (typeof body === 'string') {
-            // this.response.setHeader('transfer-encoding', 'chunked');
-
-            // if (!this.response.hasHeader('content-length')) {
-            //     this.response.setHeader('content-length', Buffer.byteLength(body));
-            // }
-
+            this.response.setHeader('content-length', Buffer.byteLength(body));
             this.response.write(body);
         }
 

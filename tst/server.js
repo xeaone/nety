@@ -104,7 +104,6 @@ const SECRET = 'secret';
                     }
 
                     const exp = Math.floor(Date.now() / 1000) + 60;
-
                     const cookie = await context.tool[context.payload.type].create({ exp, username: USERNAME }, SECRET);
 
                     context.tool.head.cookie(context, cookie);
