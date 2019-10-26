@@ -108,10 +108,8 @@ module.exports = class Context {
         }
 
         if (body instanceof Stream.Readable) {
-            // console.log(this.response.getHeader('content-type'));
-            this.response.setHeader('transfer-encoding', 'chunked');
-            console.log(body);
-            body.pipe(this.response);
+            // this.response.setHeader('transfer-encoding', 'chunked');
+            return new Promise((resolve, reject) => body.pipe(this.response).on('end', resolve).on('error', reject));
         } else if (body instanceof Buffer) {
             this.response.setHeader('content-length', body.length);
             this.response.write(body);

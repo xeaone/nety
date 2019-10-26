@@ -18,18 +18,19 @@ module.exports = class Static {
     async stream (context, path, stat) {
         const range = context.headers['range'];
 
-        // context.head('accept-ranges', 'bytes');
+        context.head('accept-ranges', 'bytes');
 
         if (range) {
-            // const parts = range.replace(/bytes=/, '').split('-');
-            // const start = parseInt(parts[0], 10);
-            // const end = parts[1] ? parseInt(parts[1], 10) : stat.size;
+            const parts = range.replace(/bytes=/, '').split('-');
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : stat.size;
 
             context.code(206);
-            // context.head('content-length', (end-start));
-            // context.head('content-range', `bytes ${start}-${end-1}/${stat.size}`);
+            context.head('content-length', (end-start));
+            context.head('content-range', `bytes ${start}-${end-1}/${stat.size}`);
             context.body(Fs.createReadStream(path, { start, end }));
         } else {
+            // context.head('transfer-encoding', 'chunked');
             // context.head('content-length', stat.size);
             context.body(Fs.createReadStream(path));
         }
