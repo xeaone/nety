@@ -1,220 +1,94 @@
 'use strict';
 
-// const Fs = require('fs');
-// const Url = require('url');
-// const Util = require('util');
-// const Path = require('path');
-// const Toked = require('toked');
-// const Jwt = require('jsonwebtoken');
-const Servey = require('../src/server');
+const Fs = require('fs');
+const Nety = require('../src');
+const { Controller, HttpServer } = Nety;
+const { Server, Auth, Basic, Cache, Cookie, Session, Payload, Compress, Normalize, Preflight, File } = HttpServer;
 
-// const JwtSign = Util.promisify(Jwt.sign);
+Promise.resolve().then(async () => {
 
-const USERNAME = 't';
-const PASSWORD = 't';
-// const EMAIL = 't@t.t';
-const SECRET = 'secret';
+    const cert = Fs.readFileSync(`${__dirname}/localhost-cert.pem`);
+    const key = Fs.readFileSync(`${__dirname}/localhost-privkey.pem`);
+    const secure = { cert, key };
 
-(async function () {
+    // const validate = async function (context, credential) {
+    //     if (credential.username !== 't' || credential.password !== 't') {
+    //         return { valid: false };
+    //     } else {
+    //         return { valid: true };
+    //     }
+    // };
+    //
+    // const basic = new HttpSessionBasic();
+    // const { strategy, scheme } = basic;
+    // const auth = new HttpServerAuth({ strategy, validate, scheme });
 
-    const routes = [
-        {
-            path: '/payload',
-            method: 'post',
-            options: {
-                auth: false
-            },
-            handler: async function (context) {
-                console.log(context.payload);
-            }
-        },
-        // {
-        //     path: '/toked',
-        //     method: 'get',
-        //     options: {
-        //         auth: {
-        //             secret: SECRET,
-        //             tool: 'toked',
-        //             scheme: 'cookie',
-        //             validate: async function (context, credential) {
-        //                 return { valid: true, credential };
-        //             }
-        //         }
-        //     },
-        //     handler: async function (context) {
-        //         return {
-        //             body: context.credential
-        //         };
-        //     }
-        // },
-        {
-            path: '/session',
-            method: 'get',
-            options: {
-                auth: {
-                    secret: SECRET,
-                    tool: 'session',
-                    validate: async function (context, credential) {
-                        const user = await context.tool.session.get(credential.decoded);
-                        if (user) {
-                            return { valid: true, credential: user };
-                        } else {
-                            return { valid: false };
-                        }
-                    }
-                }
-            },
-            handler: async function (context) {
-                return {
-                    body: context.credential
-                };
-            }
-        },
-        {
-            path: '/basic',
-            method: 'get',
-            options: {
-                auth: {
-                    tool: 'basic',
-                    validate: async function (context, credential) {
-                        if (credential.decoded.username === USERNAME && credential.decoded.password === PASSWORD) {
-                            return { valid: true, credential: { username: credential.decoded.username } };
-                        } else {
-                            return { valid: false };
-                        }
-                    }
-                }
-            },
-            handler: async function () {
-                return {
-                    body: 'basic'
-                };
-            }
-        },
-        {
-            path: '/sign-in',
-            method: [ 'get','post' ],
-            handler: async function (context) {
-                const head = {};
+    // const validate = async function (context, credential) {
+    //     const valid = await context.session.has(credential.sid);
+    //     return { valid };
+    // };
+    //
+    // const session = new Session();
+    // const { strategy, scheme } = session;
+    // const auth = new Auth({ strategy, validate, scheme });
 
-                if (context.method === 'POST') {
+    const file = new File();
+    const cache = new Cache();
+    const cookie = new Cookie();
+    const payload = new Payload();
+    // const compress = new Compress(); // comress is not ready
+    const normalize = new Normalize();
+    const preflight = new Preflight();
 
-                    if (context.payload.username !== USERNAME || context.payload.password !== PASSWORD) {
-                        return context.tool.status.unauthorized();
-                    }
+    const server0 = new Server({ secure, version: 2, port: 8080 });
+    // const server1 = new Server({ port: 8081 });
+    const controller = new Controller({ debug: true, host: 'localhost' });
 
-                    const exp = Math.floor(Date.now() / 1000) + 60;
-                    const cookie = await context.tool[context.payload.type].create({ exp, username: USERNAME }, SECRET);
+    // const routes = [
+    //    {
+    //        method: 'get',
+    //        path: '/',
+    //        async handler (context) {
+    //
+    //        }
+    //    }
+    // ]
+    //
+    // const routes = {
+    //
+    //     async 'get:cleanadven.com/' (context) {
+    //
+    //     }
+    //
+    // };
 
-                    context.tool.head.cookie(context, cookie);
+    await controller.handle(server0);
+    // await controller.handle(server1);
 
-                    return {
-                        body: {
-                            cookie: cookie,
-                            payload: context.payload
-                        }
-                    };
-                }
+    // await controller.plugin(session);
+    // await controller.plugin(auth);
+    await controller.plugin(normalize);
+    await controller.plugin(preflight);
+    await controller.plugin(cache);
+    await controller.plugin(cookie);
+    await controller.plugin(payload);
+    await controller.plugin(file);
 
-                head['content-type'] = 'text/html;charset=utf-8';
-
-                return {
-                    head,
-                    body: `
-						<h1>Sign In</h1>
-						<form method="post" action="/sign-in">
-							<input name="username" type="text" placeholder="Username" required><br>
-							<input name="password" type="text" placeholder="Password" required><br>
-							<input name="type" type="radio" value="session" required>Session<br>
-							<input name="type" type="radio" value="toked" required>Toked<br>
-							<input type="submit" value="Send"/>
-						</form>
-					`
-                };
-            }
-        },
-        {
-            path:'/(*)',
-            method: 'get',
-            options: {
-                vhost: [ 'localhost:8080', 'testcom.localhost:8080' ]
-            },
-            async handler (context) {
-                return context.tool.static({
-                    spa: true,
-                    folder: './tst/static',
-                    path: context.url.pathname
-                });
-            }
-        }
-    ];
-
-    const server = new Servey({
-        port: 8080,
-        debug: true,
-        www: true,
-        // cache: false,
-        hostname: 'localhost',
-        // tools: [
-        //     Toked
-        // ],
-
-        // tool: {
-        options: {
-            cookie: {
-                secret: SECRET
-            },
-            cache: {
-                control: true
-            }
-        },
-        routes: routes,
-        event: {
-            handler: {
-                before () {
-                    // console.log('before');
-                },
-                after () {
-                    // console.log('after');
-                }
-            }
-        }
-        // auth: {
-        // 	type: 'basic',
-        // 	type: 'basic',
-        // 	validate: async function (context, data) {
-        // 		if (data.username === 'foo' && data.password === 'bar') {
-        // 			return { valid: true, credential: { username: 'foo'} };
-        // 		} else {
-        // 			return { valid: false };
-        // 		}
-        // 	}
-        // }
+    await controller.plugin(function test (context) {
+        return context.file({
+            spa: true,
+            folder: './tst/static',
+            path: context.url.pathname
+        });
+        // context.type('html').body(`<h2>Hello World<h1>`).end();
     });
 
-    server.on('error', function (error) {
-        // console.log('error');
-        console.error(error);
-    });
+    // await controller.plugin(compress); // compress is not ready
 
-    server.on('request', function (context) {
-        // console.log(context.url);
-        console.log('request');
-    });
+    await controller.open();
 
-    server.on('open', function () {
-        // console.log('open');
-    });
+    controller.handles.forEach(server => console.log(`Host: ${server.host}, Address: ${server.address}, Port: ${server.port}`));
 
-    server.on('close', function () {
-        // console.log('close');
-    });
-
-    await server.open();
-
-    console.log(server.port);
-
-}()).catch(function (error) {
-    console.log('here');
+}).catch(error => {
     console.error(error);
 });

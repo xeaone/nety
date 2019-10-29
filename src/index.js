@@ -17,12 +17,12 @@ Object.assign(HttpServer, {
     Preflight: require('./http/server/plugin/preflight.js'),
     Router: require('./http/server/plugin/router.js'),
     Session: require('./http/server/plugin/session.js'),
-    Static: require('./http/server/plugin/static.js'),
+    File: require('./http/server/plugin/file.js'),
 });
 
 module.exports = {
-    Controller,
-    HttpServer,
     mime,
     status,
+    HttpServer,
+    Controller,
 }

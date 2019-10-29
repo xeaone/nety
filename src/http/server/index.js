@@ -12,7 +12,19 @@ const Mime = require('../../mime.js');
 const Status = require('../../status.js');
 const Context = require('./context.js');
 
+/**
+* Class for an Http Server.
+*/
+
 module.exports = class HttpServer {
+
+    /**
+    * Create an Http Server.
+    * @param {Object} options Options
+    * @param {Number} [options.port=0] - Port number
+    * @param {Boolean} [options.debug=false] - Debug mode
+    * @param {Boolean} [options.host=Os.hostname||'localhost'] - Host name
+    */
 
     constructor (options = {}) {
 
@@ -30,15 +42,16 @@ module.exports = class HttpServer {
         this.version = options.version || 1;
         this.secure = options.secure || false;
 
-        this.charset = options.charset || 'charset=utf8';
-        this.contentType = options.contentType || 'text/plain';
+        this.type = options.type;
+        this.encoding = options.encoding;
 
+        if (this.version === 2) this.options.allowHTTP1 = true;
         if (typeof this.secure === 'object') Object.assign(this.options, this.secure);
 
-        if (this.version === 1 && this.secure === false) this.listener = Http.createServer(this.options, this.handle.bind(this));
-        else if (this.version === 1 && this.secure === true) this.listener = Https.createServer(this.options, this.handle.bind(this));
-        else if (this.version === 2 && this.secure === false) this.listener = Http2.createServer(this.options, this.handle.bind(this));
-        else if (this.version === 2 && this.secure === true) this.listener = Http2.createSecureServer(this.options, this.handle.bind(this));
+        if (this.version === 1 && !this.secure) this.listener = Http.createServer(this.options, this.handle.bind(this));
+        else if (this.version === 1 && this.secure) this.listener = Https.createServer(this.options, this.handle.bind(this));
+        else if (this.version === 2 && !this.secure) this.listener = Http3.createServer(this.options, this.handle.bind(this));
+        else if (this.version === 2 && this.secure) this.listener = Http2.createSecureServer(this.options, this.handle.bind(this));
 
         this.xss = options.xss || '1; mode=block';
         this.xframe = options.xframe || 'SAMEORIGIN';
@@ -47,6 +60,14 @@ module.exports = class HttpServer {
         this.hsts = options.hsts || 'max-age=31536000; includeSubDomains; preload';
 
     }
+
+    // async context () { }
+
+    /**
+    * Handle
+    * @async
+    * @private
+    */
 
     async handle (request, response) {
 
@@ -85,6 +106,12 @@ module.exports = class HttpServer {
 
     }
 
+    /**
+    * Adds a plugin to the server.
+    * @async
+    * @param {Class|Function} - Can be a Class or Function.
+    */
+
     async plugin (plugin) {
 
         if (typeof plugin === 'function') {
@@ -101,6 +128,11 @@ module.exports = class HttpServer {
         this.plugins.push(plugin);
     }
 
+    /**
+    * Starts listening on the port and host.
+    * @async
+    */
+
     async open () {
         return new Promise(resolve => {
             this.listener.listen(this.port, this.host, () => {
@@ -113,6 +145,11 @@ module.exports = class HttpServer {
             });
         });
     }
+
+    /**
+    * Stops listening on the port and host.
+    * @async
+    */
 
     async close () {
         return new Promise(resolve => {

@@ -8,7 +8,14 @@
 <body>
 	<h1>/index</h1>
 
-    <video width="320" height="240" controls>
+    <script>
+       window.onLoad = function onLoad () {
+            var seconds = parseInt(document.location.search.substr(1));
+            if (!isNaN(seconds)) document.querySelector('video').currentTime = seconds;
+        };
+    </script>
+
+    <video width="320" height="240" onloadedmetadata="onLoad()" controls>
         <source src="./video.webm" type="video/webm">
         Your browser does not support the video tag.
     </video>

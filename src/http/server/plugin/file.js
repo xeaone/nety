@@ -5,7 +5,7 @@ const Path = require('path');
 const Util = require('util');
 const Stat = Util.promisify(Fs.stat);
 
-module.exports = class Static {
+module.exports = class File {
 
     constructor (options = {}) {
         this.restrict = /^(\.)+/;
@@ -15,22 +15,54 @@ module.exports = class Static {
         this.spa = typeof options.spa === 'boolean' ? options.spa : false;
     }
 
+    async range (range, size) {
+        let [ start, end ] = range.replace(/bytes=/, '').split('-');
+
+        start = parseInt(start);
+        end = parseInt(end);
+
+        const result = {
+            size,
+            start: isNaN(start) ? 0 : start,
+            end: isNaN(end) ? (size - 1) : end
+        };
+
+        if (!isNaN(start) && isNaN(end)) {
+            result.start = start;
+            result.end = size - 1;
+        }
+
+        if (isNaN(start) && !isNaN(end)) {
+            result.start = size - end;
+            result.end = size - 1;
+        }
+
+        return result;
+    }
+
     async stream (context, path, stat) {
         const range = context.headers['range'];
+        const extension = Path.extname(path).slice(1);
+        const mime = context.mime[extension || 'default'];
 
         context.head('accept-ranges', 'bytes');
+        context.head('content-type', `${mime};charset=${context._encoding}`);
+
+        // console.log('file',context.path);
 
         if (range) {
-            const parts = range.replace(/bytes=/, '').split('-');
-            const start = parseInt(parts[0], 10);
-            const end = parts[1] ? parseInt(parts[1], 10) : stat.size;
+            const { start, end } = await this.range(range, stat.size);
 
-            context.code(206);
-            context.head('content-length', (end-start));
-            context.head('content-range', `bytes ${start}-${end-1}/${stat.size}`);
-            context.body(Fs.createReadStream(path, { start, end }));
+            if (start >= stat.size || end >= stat.size) {
+                context.head('content-range', `bytes */${stat.size}`).code(416).end();
+            } else {
+                context.code(206);
+                context.head('content-length', start === end ? 0 : end-start+1);
+                context.head('content-range', `bytes ${start}-${end}/${stat.size}`);
+                context.body(Fs.createReadStream(path, { start, end }));
+            }
+
         } else {
-            // context.head('transfer-encoding', 'chunked');
             context.head('content-length', stat.size);
             context.body(Fs.createReadStream(path));
         }
@@ -142,12 +174,10 @@ module.exports = class Static {
 
         }
 
-        // console.error('oops');
+        if (data.code) {
+            context.code(data.code);
+        }
 
-        // if (data.code) {
-        //     context.code(data.code);
-        // }
-        //
         // return context.end();
     }
 
