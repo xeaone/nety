@@ -22,7 +22,6 @@ const Cookie = require('./plugin/cookie.js');
 const Normalize = require('./plugin/normalize.js');
 const Payload = require('./plugin/payload.js');
 const Preflight = require('./plugin/preflight.js');
-const Router = require('./plugin/router.js');
 const Session = require('./plugin/session.js');
 const File = require('./plugin/file.js');
 
@@ -187,6 +186,12 @@ class HttpServer {
         }
 
     }
+
+    /**
+    * Push
+    * @async
+    * @private
+    */
 
     async push ({ method, host, path, handle, name, self  }) {
         if (!host || !host.length) host = ['*'];
@@ -361,7 +366,6 @@ Object.assign(HttpServer, {
     Normalize,
     Payload,
     Preflight,
-    Router,
     Session
 });
 
