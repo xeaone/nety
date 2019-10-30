@@ -48,8 +48,6 @@ module.exports = class File {
         context.head('accept-ranges', 'bytes');
         context.head('content-type', `${mime};charset=${context._encoding}`);
 
-        // console.log('file',context.path);
-
         if (range) {
             const { start, end } = await this.range(range, stat.size);
 
@@ -121,12 +119,10 @@ module.exports = class File {
             if (stat.isFile()) {
                 context.code(data.code || 200);
                 await this.stream(context, path, stat);
-                // return context.end();
             } else if (data.spa === true) {
                 context.code(data.code || 200);
                 stat = await Stat(spaPath);
                 await this.stream(context, spaPath, stat);
-                // return context.end();
             } else {
                 context.code(404);
 
@@ -135,9 +131,9 @@ module.exports = class File {
                     await this.stream(context, errorPath, stat);
                 } catch (e) { /* ignore */ }
 
-                // return context.end();
             }
 
+            // return context.end();
         } catch (error) {
 
             if (error.code === 'ENOENT' && data.spa) {
@@ -147,7 +143,6 @@ module.exports = class File {
                     context.code(data.code || 200);
                     const stat = await Stat(spaPath);
                     await this.stream(context, spaPath, stat);
-                    // return context.end();
                 } else {
                     context.code(404);
 
@@ -156,9 +151,9 @@ module.exports = class File {
                         await this.stream(context, errorPath, stat);
                     } catch (e) { /* ignore */ }
 
-                    // return context.end();
                 }
 
+                // return context.end();
             } else if (error.code === 'ENOENT' || error.code === 'EACCES' || error.code === 'EPERM') {
                 context.code(error.code === 'ENOENT' ? 404 : 403);
 

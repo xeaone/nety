@@ -10,8 +10,8 @@ const Status = require('../../status.js');
 
 module.exports = class Context {
 
-    // get mime () { return Mime; }
-    // get status () { return Status; }
+    get mime () { return Mime; }
+    get status () { return Status; }
 
     constructor (options = {}) {
         const request = options.request;
@@ -25,9 +25,9 @@ module.exports = class Context {
 
         const headers = Object.freeze({ ...request.headers });
         const path = request.headers[':path'] || request.url;
-        const scheme = request.headers[':scheme'] || instance.secure ? 'https' : 'http';
-        const method = request.headers[':method'] || request.method.toLowerCase();
-        const authority = request.headers[':authority'] || request.headers['host'];
+        const method = (request.headers[':method'] || request.method).toLowerCase();
+        const authority = (request.headers[':authority'] || request.headers['host']).toLowerCase();
+        const scheme = (request.headers[':scheme'] || instance.secure ? 'https' : 'http').toLowerCase();
         const url = new Url(`${scheme}://${authority}${path}`);
 
         Object.defineProperties(this, {
@@ -39,12 +39,77 @@ module.exports = class Context {
             scheme: { enumerable: true, value: scheme },
             method: { enumerable: true, value: method },
             authority: { enumerable: true, value: authority },
-            mime: { enumerable: true, value: Mime },
-            status: { enumerable: true, value: Status },
             url: { enumerable: true, value: url },
         });
 
     }
+
+    /**
+    * Compares the arguments against the context.
+    * @params {Array} hosts - hosts
+    * @params {Array} methods - methods
+    * @params {Array} paths - paths
+    * @returns {Boolean}
+    */
+
+    match (hosts, methods, paths) {
+
+        const method = this.method;
+        const host = this.url.hostname;
+        const path = this.url.pathname;
+
+        if (!hosts.includes('*') && !hosts.includes(host)) return false;
+        if (!methods.includes('*') && !methods.includes(method)) return false;
+        if (paths.includes('*') || paths.includes(path)) return true;
+
+        const requestPath = this.url.pathname;
+        for (const responsePath of paths) {
+
+            const requestParts = requestPath.replace(/^\/|\/$/g, '').split(/\/|-/);
+            const responseParts = responsePath.replace(/^\/|\/$/g, '').split(/\/|-/);
+            const compareLength = responseParts.length;
+            const compareParts = [];
+
+            for (let i = 0; i < compareLength; i++) {
+
+                if (
+                    responseParts[i].startsWith('(') && responseParts[i].endsWith(')') ||
+                    responseParts[i].startsWith('{') && responseParts[i].endsWith('}')
+                ) {
+
+                    if (
+                        responseParts[i] === '(~)' || responseParts[i] === '(*)' ||
+                        responseParts[i] === '{~}' || responseParts[i] === '{*}'
+                    ) {
+                        return true;
+                    } else {
+                        compareParts.push(requestParts[i]);
+                    }
+
+                } else if (responseParts[i] !== requestParts[i]) {
+                    return false;
+                } else {
+                    compareParts.push(responseParts[i]);
+                }
+
+            }
+
+            if (compareParts.join('/') === requestParts.join('/')) {
+                return true;
+            } else {
+                return false;
+            }
+
+        }
+
+        return false;
+    }
+
+    /**
+    * Defines a property on the context.
+    * @param {String} name - name of property
+    * @param {Any} value - value of property
+    */
 
     set (name, value) {
         if (name in this) throw new Error('Context - property defined');
@@ -52,6 +117,12 @@ module.exports = class Context {
         const property = { enumerable, value };
         Object.defineProperty(this, name, property);
     }
+
+    /**
+    * Sets the content-type header using a file type.
+    * @param {String} [type] - the file type.
+    * @returns {Context|String} - Return the context instance for chaining if the type param is provided or the value of content-type header.
+    */
 
     type (type) {
         if (type) {

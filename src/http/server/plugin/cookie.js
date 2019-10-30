@@ -9,8 +9,8 @@ module.exports = class Cookie {
         this.path = options.path || '';
         this.domain = options.domain || '';
         this.sameSite = options.sameSite || 'Strict';
+        this.secure = options.secure === false ? false : true;
         this.httpOnly = options.httpOnly === false ? false : true;
-        this.secure = options.secure === undefined ? false : options.secure === true ? true : false;
 
         // Number of seconds until the cookie expires.
         // A zero or negative number will expire the cookie immediately.

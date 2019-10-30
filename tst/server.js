@@ -3,13 +3,9 @@
 const Fs = require('fs');
 const Nety = require('../src');
 const { Controller, HttpServer } = Nety;
-const { Server, Auth, Basic, Cache, Cookie, Session, Payload, Compress, Normalize, Preflight, File } = HttpServer;
+const { Server, Auth, Basic, Cache, Cookie, File, Payload, Normalize, Preflight, Session } = HttpServer;
 
 Promise.resolve().then(async () => {
-
-    const cert = Fs.readFileSync(`${__dirname}/localhost-cert.pem`);
-    const key = Fs.readFileSync(`${__dirname}/localhost-privkey.pem`);
-    const secure = { cert, key };
 
     // const validate = async function (context, credential) {
     //     if (credential.username !== 't' || credential.password !== 't') {
@@ -18,16 +14,16 @@ Promise.resolve().then(async () => {
     //         return { valid: true };
     //     }
     // };
-    //
-    // const basic = new HttpSessionBasic();
+
+    // const basic = new Basic();
     // const { strategy, scheme } = basic;
-    // const auth = new HttpServerAuth({ strategy, validate, scheme });
+    // const auth = new Auth({ strategy, validate, scheme });
 
     // const validate = async function (context, credential) {
     //     const valid = await context.session.has(credential.sid);
     //     return { valid };
     // };
-    //
+
     // const session = new Session();
     // const { strategy, scheme } = session;
     // const auth = new Auth({ strategy, validate, scheme });
@@ -36,45 +32,45 @@ Promise.resolve().then(async () => {
     const cache = new Cache();
     const cookie = new Cookie();
     const payload = new Payload();
-    // const compress = new Compress(); // comress is not ready
     const normalize = new Normalize();
     const preflight = new Preflight();
 
-    const server0 = new Server({ secure, version: 2, port: 8080 });
-    // const server1 = new Server({ port: 8081 });
-    const controller = new Controller({ debug: true, host: 'localhost' });
+    const server = new Server({
+        port: 8080,
+        version: 2,
+        debug: true,
+        host: 'localhost',
+        secure: {
+            cert: Fs.readFileSync(`${__dirname}/localhost-cert.pem`),
+            key: Fs.readFileSync(`${__dirname}/localhost-privkey.pem`)
+        }
+    });
 
-    // const routes = [
-    //    {
-    //        method: 'get',
-    //        path: '/',
-    //        async handler (context) {
-    //
-    //        }
-    //    }
-    // ]
-    //
-    // const routes = {
-    //
-    //     async 'get:cleanadven.com/' (context) {
+    // await server.add(session);
+    // await server.add(auth);
+    await server.add(normalize);
+    await server.add(preflight);
+    await server.add(cache);
+    await server.add(cookie);
+    await server.add(payload);
+    await server.add(file);
+
+    // [
+    //     // 'get', 'peaksrecovery.com', '/', async context => {
+    //     'get peaksrecovery.com /', async context => {
     //
     //     }
-    //
-    // };
+    // ]
+    
+    await server.get('/', async context => {
+        console.log('get /');
+    });
 
-    await controller.handle(server0);
-    // await controller.handle(server1);
+    await server.get('/', async context => {
+        console.log('get /');
+    });
 
-    // await controller.plugin(session);
-    // await controller.plugin(auth);
-    await controller.plugin(normalize);
-    await controller.plugin(preflight);
-    await controller.plugin(cache);
-    await controller.plugin(cookie);
-    await controller.plugin(payload);
-    await controller.plugin(file);
-
-    await controller.plugin(function test (context) {
+    await server.get(async context => {
         return context.file({
             spa: true,
             folder: './tst/static',
@@ -83,12 +79,8 @@ Promise.resolve().then(async () => {
         // context.type('html').body(`<h2>Hello World<h1>`).end();
     });
 
-    // await controller.plugin(compress); // compress is not ready
+    await server.open();
 
-    await controller.open();
+    console.log(`Host: ${server.host}, Address: ${server.address}, Port: ${server.port}`)
 
-    controller.handles.forEach(server => console.log(`Host: ${server.host}, Address: ${server.address}, Port: ${server.port}`));
-
-}).catch(error => {
-    console.error(error);
-});
+}).catch(console.error);
