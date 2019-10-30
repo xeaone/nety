@@ -20,15 +20,17 @@ module.exports = class Context {
 
         this._body = null;
         this._message = null;
+        this._secure = options.secure || instance.secure;
+        this._host = options.host || instance.host || '';
         this._type = options.type || instance.type || 'default'
         this._encoding = options.encoding || instance.encoding || 'utf8';
 
         const headers = Object.freeze({ ...request.headers });
         const path = request.headers[':path'] || request.url;
         const method = (request.headers[':method'] || request.method).toLowerCase();
-        const authority = (request.headers[':authority'] || request.headers['host']).toLowerCase();
-        const scheme = (request.headers[':scheme'] || instance.secure ? 'https' : 'http').toLowerCase();
-        const url = new Url(`${scheme}://${authority}${path}`);
+        const scheme = (request.headers[':scheme'] || this._secure ? 'https' : 'http').toLowerCase();
+        const authority = (request.headers[':authority'] || request.headers['host'] || this._host).toLowerCase();
+        const url = new Url(path, `${scheme}://${authority}`);
 
         Object.defineProperties(this, {
             request: { enumerable: true, value: request },
@@ -42,67 +44,6 @@ module.exports = class Context {
             url: { enumerable: true, value: url },
         });
 
-    }
-
-    /**
-    * Compares the arguments against the context.
-    * @params {Array} hosts - hosts
-    * @params {Array} methods - methods
-    * @params {Array} paths - paths
-    * @returns {Boolean}
-    */
-
-    match (hosts, methods, paths) {
-
-        const method = this.method;
-        const host = this.url.hostname;
-        const path = this.url.pathname;
-
-        if (!hosts.includes('*') && !hosts.includes(host)) return false;
-        if (!methods.includes('*') && !methods.includes(method)) return false;
-        if (paths.includes('*') || paths.includes(path)) return true;
-
-        const requestPath = this.url.pathname;
-        for (const responsePath of paths) {
-
-            const requestParts = requestPath.replace(/^\/|\/$/g, '').split(/\/|-/);
-            const responseParts = responsePath.replace(/^\/|\/$/g, '').split(/\/|-/);
-            const compareLength = responseParts.length;
-            const compareParts = [];
-
-            for (let i = 0; i < compareLength; i++) {
-
-                if (
-                    responseParts[i].startsWith('(') && responseParts[i].endsWith(')') ||
-                    responseParts[i].startsWith('{') && responseParts[i].endsWith('}')
-                ) {
-
-                    if (
-                        responseParts[i] === '(~)' || responseParts[i] === '(*)' ||
-                        responseParts[i] === '{~}' || responseParts[i] === '{*}'
-                    ) {
-                        return true;
-                    } else {
-                        compareParts.push(requestParts[i]);
-                    }
-
-                } else if (responseParts[i] !== requestParts[i]) {
-                    return false;
-                } else {
-                    compareParts.push(responseParts[i]);
-                }
-
-            }
-
-            if (compareParts.join('/') === requestParts.join('/')) {
-                return true;
-            } else {
-                return false;
-            }
-
-        }
-
-        return false;
     }
 
     /**

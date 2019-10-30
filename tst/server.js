@@ -55,16 +55,29 @@ Promise.resolve().then(async () => {
     await server.add(payload);
     await server.add(file);
 
-    // [
-    //     // 'get', 'peaksrecovery.com', '/', async context => {
-    //     'get peaksrecovery.com /', async context => {
-    //
-    //     }
-    // ]
-    
-    await server.get('/', async context => {
-        console.log('get /');
-    });
+    await server.add([
+
+       `get
+           localhost
+           /test
+       `, async context => {
+            console.log('get localhost /test');
+        },
+
+        'get aosd /test', async context => {
+            console.log('get aosd /test');
+        },
+
+        '/test', [
+            async context => {
+                console.log('* * /test: one');
+            },
+            async context => {
+                console.log('* * /test: two');
+            },
+        ]
+
+    ]);
 
     await server.get('/', async context => {
         console.log('get /');

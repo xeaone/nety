@@ -78,6 +78,71 @@ class HttpServer {
     }
 
     /**
+    * Compares the arguments against the context.
+    * If no HTTP-Method is provided then all are accpeted (*).
+    * If no Virutal Host is provided then all host headers are accpeted (*).
+    * Dyanmic paths are accepted single level use such as /{ANY} /(ANY), or multiple levels such as /{*} /(*).
+    * @async
+    * @param {Object<String|Array>} - request.host, request.method, request.path
+    * @param {Object<String|Array>} - response.host, response.method, response.path
+    * @return {Boolean}
+    */
+
+    async match (request, response) {
+
+        if (typeof response.method === 'string') response.method = [response.method];
+        if (typeof response.host === 'string') response.host = [response.host];
+        if (typeof response.path === 'string') response.path = [response.path];
+
+        if (!response.method.includes('*') && !response.method.includes(request.method)) return false;
+        if (!response.host.includes('*') && !response.host.includes(request.host)) return false;
+
+        const requestPath = request.path;
+        const requestParts = requestPath.split(/\/|-/);
+
+        const responsePaths = response.path;
+        for (const responsePath of responsePaths) {
+
+            const responseParts = responsePath.split(/\/|-/);
+            const compareLength = responseParts.length;
+            const compareParts = [];
+
+            for (let i = 0; i < compareLength; i++) {
+
+                if (
+                    responseParts[i].startsWith('(') && responseParts[i].endsWith(')') ||
+                    responseParts[i].startsWith('{') && responseParts[i].endsWith('}')
+                ) {
+
+                    if (
+                        responseParts[i] === '(~)' || responseParts[i] === '(*)' ||
+                        responseParts[i] === '{~}' || responseParts[i] === '{*}'
+                    ) {
+                        return true;
+                    } else {
+                        compareParts.push(requestParts[i]);
+                    }
+
+                } else if (responseParts[i] !== requestParts[i]) {
+                    return false;
+                } else {
+                    compareParts.push(responseParts[i]);
+                }
+
+            }
+
+            if (compareParts.join('/') === requestParts.join('/')) {
+                return true;
+            } else {
+                return false;
+            }
+
+        }
+
+        return false;
+    }
+
+    /**
     * Handle
     * @async
     * @private
@@ -101,7 +166,10 @@ class HttpServer {
                 if (response.closed || response.aborted || response.destroyed || response.writableEnded) {
                     break;
                 } else  {
-                    const match = context.match(handle.host, handle.method, handle.path);
+                    const match = await this.match(
+                        { method: context.method, host: context.url.hostname, path: context.url.pathname },
+                        { method: handle.method, host: handle.host, path: handle.path }
+                    );
                     if (!match) continue;
                     const value = await handle.handle.call(handle.self, context);
                     if (handle.name && value) context.set(handle.name, value);
@@ -120,77 +188,96 @@ class HttpServer {
 
     }
 
+    async push ({ method, host, path, handle, name, self  }) {
+        if (!host || !host.length) host = ['*'];
+        if (!path || !path.length) path = ['/{*}'];
+        if (!method || !method.length) method = ['*'];
+        if (!handle) throw new Error('handle argument required');
+        if (name) name = `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
+        this.handles.push({ method, host, path, handle, name, self });
+    }
+
     /**
     * Adds handles to the server.
+    * A single String or multiple Strings must procced an Array, Function, or Object.
+    * Multiple String arguments are accepted with the delimiter of a space, line break, or comma.
+    * Valid String arguments are HTTP-Methods, Virutal-Hosts, and paths starting with a forward slash.
+    * Dyanmic paths, hosts, and methods are accepted. See the context.match method.
+    * If no String arguments are providied then the following Array, Function, or Object will use the '* * /{*}' pattern.
     * @async
-    * @params
+    * @param {String|Array|Function|Object}
     */
 
     async add () {
-
-        if (arguments.length === 1 && arguments[0] instanceof Array) {
-            const [ items ] = arguments;
-            let holder = [];
-
-            for (const item of items) {
-                if (item instanceof Array) {
-                    this.add.apply(this, items);
-                } else if (typeof item === 'function') {
-                    holder.push(item);
-                    this.add.apply(this, holder);
-                    holder.length = 0;
-                } else if (typeof item === 'string') {
-                    holder.push(item);
-                }
-            }
-
-            return;
-        }
-
         const methods = this.methods;
-        let self, handle, name;
-        let method = ['*'], host = ['*'], path = ['/{*}'];
+        const length = arguments.length;
+        let holder = '';
 
-        for (const argument of arguments) {
+        for (let i = 0; i < length; i++) {
+            const argument = arguments[i];
 
-            if (typeof argument === 'string') {
-                const parts = argument.replace(/\s+/g, ' ').trim().toLowerCase().split(' ');
+            if (argument instanceof Array) {
+                this.add.apply(this, argument);
+            } else if (typeof argument === 'string') {
+                const next = arguments[++i];
+
+                if (typeof next === 'string') {
+                    holder += next;
+                    continue;
+                } else {
+                    holder += argument;
+                }
+
+                if (next instanceof Array) {
+                    next.forEach(async data => await this.add.call(this, holder, data));
+                    holder = '';
+                    continue;
+                }
+
+                const method = [], host = [], path = [];
+                const parts = holder.trim().toLowerCase().split(/\s+|,/);
+                holder = '';
 
                 for (const part of parts) {
-
-                    if (part.startsWith('/')) {
-                        path = part.split(',');
+                    if (part === '' || part === ',') {
+                        continue;
+                    } else if (part.startsWith('/')) {
+                        path.push(part);
                     } else if (methods.includes(part)) {
-                        method = part.split(',');
+                        method.push(part);
                     } else {
-                        host = part.split(',');
+                        host.push(part);
                     }
-
                 }
 
-            // } else if (argument instanceof Array) {
-                // console.warn('need to handle array');
-            } else if (typeof argument === 'object') {
-                self = argument;
-                handle = self.handle;
-                name = self.name || self.constructor.name;
+                if (!next) {
+                    throw new Error('handle required');
+                } else if (typeof next === 'function') {
+                    const self = next;
+                    const handle = next;
+                    const name = next.name === 'Function' ? '' : next.name;
+                    await this.push({ self, handle, name, method, host, path });
+                } else if (typeof next === 'object') {
+                    const self = next;
+                    const handle = next.handle;
+                    const name = next.name || next.constructor.name;
+                    await this.push({ self, handle, name, method, host, path});
+                } else {
+                    throw new Error('invalid argument type');
+                }
+
             } else if (typeof argument === 'function') {
-                self = argument;
-                handle = argument;
-                name = handle.name === 'Function' ? '' : handle.name;
+                const name = argument.name === 'Function' ? '' : argument.name;
+                await this.push({ self: argument, handle: argument, name });
+            } else if (typeof argument === 'object') {
+                const name = argument.name || argument.constructor.name;
+                await this.push({ self: argument, handle: argument.handle, name });
+            } else {
+                throw new Error('invalid argument type');
             }
 
         }
 
-        if (!handle) {
-            throw new Error('handle function required');
-        }
-
-        if (name) {
-            name = `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
-        }
-
-        this.handles.push({ method, host, path, handle, name, self });
     }
 
     async get () {
