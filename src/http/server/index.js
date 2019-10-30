@@ -14,7 +14,6 @@ const Methods = require('../../methods.js');
 
 const Context = require('./context.js');
 
-const Auth = require('./plugin/auth.js');
 const Basic = require('./plugin/basic.js');
 const Cache = require('./plugin/cache.js');
 const Compress = require('./plugin/compress.js');
@@ -357,7 +356,6 @@ class HttpServer {
 Object.assign(HttpServer, {
     Server: HttpServer,
     Context,
-    Auth,
     Basic,
     Cache,
     Compress,

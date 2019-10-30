@@ -3,30 +3,24 @@
 const Fs = require('fs');
 const Nety = require('../src');
 const { Controller, HttpServer } = Nety;
-const { Server, Auth, Basic, Cache, Cookie, File, Payload, Normalize, Preflight, Session } = HttpServer;
+const { Server, Basic, Cache, Cookie, File, Payload, Normalize, Preflight, Session } = HttpServer;
 
 Promise.resolve().then(async () => {
 
-    // const validate = async function (context, credential) {
-    //     if (credential.username !== 't' || credential.password !== 't') {
+    // const validate = async function (context, username, password) {
+    //     if (username !== 't' || password !== 't') {
     //         return { valid: false };
     //     } else {
     //         return { valid: true };
     //     }
     // };
 
-    // const basic = new Basic();
-    // const { strategy, scheme } = basic;
-    // const auth = new Auth({ strategy, validate, scheme });
-
-    // const validate = async function (context, credential) {
-    //     const valid = await context.session.has(credential.sid);
-    //     return { valid };
-    // };
-
-    // const session = new Session();
-    // const { strategy, scheme } = session;
-    // const auth = new Auth({ strategy, validate, scheme });
+    const secret = 'secret';
+    const validate = async function (context, sid) {
+        console.log(sid);
+        const valid = await context.session.has(sid);
+        return { valid };
+    };
 
     const file = new File();
     const cache = new Cache();
@@ -34,6 +28,8 @@ Promise.resolve().then(async () => {
     const payload = new Payload();
     const normalize = new Normalize();
     const preflight = new Preflight();
+    const basic = new Basic({ validate, secret });
+    const session = new Session({ validate });
 
     const server = new Server({
         port: 8080,
@@ -46,8 +42,8 @@ Promise.resolve().then(async () => {
         }
     });
 
-    // await server.add(session);
-    // await server.add(auth);
+    await server.add(session);
+    // await server.add(basic);
     await server.add(normalize);
     await server.add(preflight);
     await server.add(cache);
