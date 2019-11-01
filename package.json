@@ -1,13 +1,13 @@
 {
 	"name": "nety",
-	"version": "0.0.3",
+	"version": "0.0.5",
 	"description": "Nety",
 	"main": "dst/index.js",
 	"engines": {
 		"node": ">=7.6.0"
 	},
 	"scripts": {
-        "build": "cp -r src/. dst",
+        "build": "rm -r dst/* && cp -r src/. dst",
 		"test": "nodemon --watch src --watch tst tst/server.js"
 	},
 	"repository": {

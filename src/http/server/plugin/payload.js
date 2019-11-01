@@ -38,7 +38,7 @@ module.exports = class Payload {
             return {};
         }
 
-        const type = context.request.headers['content-type'];
+        const type = context.request.headers['content-type'] || '';
 
         data = data.toString();
 
