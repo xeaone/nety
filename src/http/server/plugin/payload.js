@@ -31,24 +31,22 @@ module.exports = class Payload {
 
         if (context.method !== 'post') return {};
 
-        let data = await this.data(context);
+        const data = await this.data(context);
 
-        if (data === null) {
-            context.code(413).end();
-            return {};
-        }
+        if (data === null) return context.code(413).end();
 
         const type = context.request.headers['content-type'] || '';
 
-        data = data.toString();
-
         if (type.includes('application/json')) {
-            data = JSON.parse(data || '{}');
+            try { return JSON.parse(data); }
+            catch { return context.code(400).end(); }
         } else if (type.includes('application/x-www-form-urlencoded')) {
-            data = Querystring.parse(data);
+            try { return Querystring.parse(data) }
+            catch { return context.code(400).end(); }
         }
 
-        return data || {};
+        try { return JSON.parse(data); }
+        catch { return {}; }
     }
 
 }

@@ -95,6 +95,16 @@ class HttpServer {
         if (!response.method.includes('*') && !response.method.includes(request.method)) return false;
         if (!response.host.includes('*') && !response.host.includes(request.host)) return false;
 
+        // if (
+        //     !response.path.includes('/{*}') &&
+        //     !response.path.includes('/(*)') &&
+        //     !response.path.includes('/{~}') &&
+        //     !response.path.includes('/(~)') &&
+        //     !response.path.includes(request.path)
+        // ) return false;
+        //
+        // return true;
+
         const requestPath = request.path;
         const requestParts = requestPath.split(/\/|-/);
 
@@ -187,21 +197,6 @@ class HttpServer {
     }
 
     /**
-    * Push
-    * @async
-    * @private
-    */
-
-    async push ({ method, host, path, handle, name, self  }) {
-        if (!host || !host.length) host = ['*'];
-        if (!path || !path.length) path = ['/{*}'];
-        if (!method || !method.length) method = ['*'];
-        if (!handle) throw new Error('handle argument required');
-        if (name) name = `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
-        this.handles.push({ method, host, path, handle, name, self });
-    }
-
-    /**
     * Adds handles to the server.
     * A single String or multiple Strings must procced an Array, Function, or Object.
     * Multiple String arguments are accepted with the delimiter of a space, line break, or comma.
@@ -221,63 +216,57 @@ class HttpServer {
             const argument = arguments[i];
 
             if (argument instanceof Array) {
-                this.add.apply(this, argument);
-            } else if (typeof argument === 'string') {
-                const next = arguments[++i];
-
-                if (typeof next === 'string') {
-                    holder += next;
-                    continue;
-                } else {
-                    holder += argument;
-                }
-
-                if (next instanceof Array) {
-                    next.forEach(async data => await this.add.call(this, holder, data));
-                    holder = '';
-                    continue;
-                }
-
-                const method = [], host = [], path = [];
-                const parts = holder.trim().toLowerCase().split(/\s+|,/);
+                for (const data of argument) await this.add(holder, data);
                 holder = '';
-
-                for (const part of parts) {
-                    if (part === '' || part === ',') {
-                        continue;
-                    } else if (part.startsWith('/')) {
-                        path.push(part);
-                    } else if (methods.includes(part)) {
-                        method.push(part);
-                    } else {
-                        host.push(part);
-                    }
-                }
-
-                if (!next) {
-                    throw new Error('handle required');
-                } else if (typeof next === 'function') {
-                    const self = next;
-                    const handle = next;
-                    const name = next.name === 'Function' ? '' : next.name;
-                    await this.push({ self, handle, name, method, host, path });
-                } else if (typeof next === 'object') {
-                    const self = next;
-                    const handle = next.handle;
-                    const name = next.name || next.constructor.name;
-                    await this.push({ self, handle, name, method, host, path});
+            } else if (typeof argument === 'string') {
+                if (holder) {
+                    holder = `${holder},${argument}`;
                 } else {
-                    throw new Error('invalid argument type');
+                    holder = `${argument}`;
+                }
+            } else {
+                let self, handle, name;
+                const method = [], host = [], path = [];
+
+                if (holder) {
+                    const parts = holder.trim().toLowerCase().split(/\s+|,/);
+
+                    for (const part of parts) {
+                        if (part === '' || part === ',') {
+                            continue;
+                        } else if (part.startsWith('/')) {
+                            path.push(part);
+                        } else if (methods.includes(part)) {
+                            method.push(part);
+                        } else {
+                            host.push(part);
+                        }
+                    }
+
+                    holder = '';
                 }
 
-            } else if (typeof argument === 'function') {
-                const name = argument.name === 'Function' ? '' : argument.name;
-                await this.push({ self: argument, handle: argument, name });
-            } else if (typeof argument === 'object') {
-                const name = argument.name || argument.constructor.name;
-                await this.push({ self: argument, handle: argument.handle, name });
-            } else {
-                throw new Error('invalid argument type');
+                if (!host.length) host.push('*');
+                if (!path.length) path.push('/{*}');
+                if (!method.length) method.push('*');
+
+                if (typeof argument === 'function') {
+                    self = argument;
+                    handle = argument;
+                } else if (typeof argument === 'object') {
+                    self = argument;
+                    handle = argument.handle;
+                } else {
+                    throw new Error('invalid handle');
+                }
+
+                name = argument.name || argument.constructor.name;
+                name = name === 'Function' ? '' : name;
+                name = `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
+
+                // console.log(name, method, host, path);
+
+                this.handles.push({ self, handle, name, method, host, path});
             }
 
         }
