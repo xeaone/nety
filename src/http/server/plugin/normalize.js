@@ -14,9 +14,14 @@ module.exports = class Normalize {
             location.hostname = location.hostname.slice(4);
         }
 
+        if (location.pathname.includes('//')) {
+            redirect = true;
+            location.pathname = location.pathname.replace(/\/+/g,'/');
+        }
+
         if (location.pathname !== '/' && location.pathname.endsWith('/')) {
             redirect = true;
-            location.pathname = location.pathname.replace(/\/+/g,'/').slice(0, -1);
+            location.pathname = location.pathname.slice(0, -1);
         }
 
         if (redirect) {
