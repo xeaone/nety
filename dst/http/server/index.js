@@ -171,7 +171,8 @@ class HttpServer {
             const handles = this.handles;
 
             for (const handle of handles) {
-                if (response.closed || response.aborted || response.destroyed || response.writableEnded) {
+                // if (response.finished || response.closed || response.aborted || response.destroyed || response.writableEnded) {
+                if (response.finished) {
                     break;
                 } else  {
                     const match = await this.match(
@@ -184,7 +185,8 @@ class HttpServer {
                 }
             }
 
-            if (!response.closed && !response.aborted && !response.destroyed && !response.writableEnded && this.end) {
+            // if (!response.finished && !response.closed && !response.aborted && !response.destroyed && !response.writableEnded && this.end) {
+            if (!response.finished && this.end) {
                 return context.end();
             }
 

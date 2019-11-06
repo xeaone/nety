@@ -147,7 +147,7 @@ module.exports = class Context {
             this.response.write(body);
         }
 
-        return new Promise((resolve) => this.response.end(() => resolve()));
+        return new Promise((resolve, reject) => this.response.on('error', reject).end(resolve));
     }
 
 }
