@@ -107,11 +107,11 @@ module.exports = class Context {
         }
     }
 
-    end (data) {
+    end (body) {
 
         const code = this.response.statusCode || 200;
         const message =  this.status[code] || '';
-        const body = body || this._body || message;
+        body = body || this._body || message;
 
         if (!this.response.hasHeader('content-type')) {
             const path = this.url.pathname;
