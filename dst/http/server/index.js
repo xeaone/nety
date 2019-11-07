@@ -46,8 +46,6 @@ class HttpServer {
     constructor (options = {}) {
 
         this.family = null;
-        this.address = null;
-
         this.type = options.type;
         this.port = options.port || 0;
         this.encoding = options.encoding;
@@ -57,6 +55,7 @@ class HttpServer {
         this.handles = options.handles || [];
         this.secure = options.secure || false;
         this.host = options.host || Os.hostname() || 'localhost';
+        this.address = options.address || options.host || '0.0.0.0';
         this.end = typeof options.end === 'boolean' ? options.end : true;
 
         this.xss = options.xss || '1; mode=block';
@@ -171,7 +170,6 @@ class HttpServer {
             const handles = this.handles;
 
             for (const handle of handles) {
-                // if (response.finished || response.closed || response.aborted || response.destroyed || response.writableEnded) {
                 if (response.finished) {
                     break;
                 } else  {
@@ -185,7 +183,6 @@ class HttpServer {
                 }
             }
 
-            // if (!response.finished && !response.closed && !response.aborted && !response.destroyed && !response.writableEnded && this.end) {
             if (!response.finished && this.end) {
                 return context.end();
             }
@@ -266,8 +263,6 @@ class HttpServer {
                 name = name === 'Function' ? '' : name;
                 name = `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
 
-                // console.log(name, method, host, path);
-
                 this.handles.push({ self, handle, name, method, host, path});
             }
 
@@ -318,12 +313,11 @@ class HttpServer {
 
     async open () {
         return new Promise(resolve => {
-            this.listener.listen(this.port, this.host, () => {
+            this.listener.listen(this.port, this.address, () => {
                 const info = this.listener.address();
                 this.port = info.port;
                 this.family = info.family;
                 this.address = info.address;
-                this.host = this.host || info.address;
                 resolve();
             });
         });
