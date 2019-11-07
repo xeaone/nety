@@ -116,21 +116,33 @@ module.exports = class Context {
         if (!this.response.hasHeader('content-type')) {
             const path = this.url.pathname;
             const extension = Path.extname(path).slice(1);
-            const mime = this.mime[extension || this._type];
-            this.response.setHeader('content-type', `${mime};charset=${this._encoding}`);
+
+            if (extension) {
+                const mime = this.mime[extension] || this.mime[this._type];
+                this.response.setHeader('content-type', `${mime};charset=${this._encoding}`);
+            }
+
         }
 
         if (body instanceof Stream) {
-            return new Promise((resolve, reject) => body.pipe(this.response).on('end', resolve).on('error', reject));
-        } else if (body instanceof Buffer) {
-            this.response.setHeader('content-length', body.length);
-            this.response.write(body);
-        } else if (typeof body === 'object') {
-            body = JSON.stringify(body);
-            this.response.setHeader('content-type', `${this.mime['json']};charset=${this._encoding}`);
-            this.response.setHeader('content-length', Buffer.byteLength(body));
-            this.response.write(body);
-        } else if (typeof body === 'string') {
+            return new Promise((resolve, reject) => body.pipe(this.response).on('error', reject).on('end', resolve));
+        } else {
+
+            if (typeof body === 'string' || body instanceof Buffer) {
+
+                if (!this.response.hasHeader('content-type')) {
+                    this.response.setHeader('content-type', `${this.mime[this._type]};charset=${this._encoding}`);
+                }
+
+            } else if (typeof body === 'object') {
+                body = JSON.stringify(body);
+
+                if (!this.response.hasHeader('content-type')) {
+                    this.response.setHeader('content-type', `${this.mime['json']};charset=${this._encoding}`);
+                }
+
+            }
+
             this.response.setHeader('content-length', Buffer.byteLength(body));
             this.response.write(body);
         }

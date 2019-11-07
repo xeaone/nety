@@ -117,6 +117,6 @@ module.exports = {
     'wmv': 'video/x-ms-wmv',
     'avi': 'video/x-msvideo',
 
-    'default': 'application/octet-stream'
+    'default': 'text/plain'
 
 }
