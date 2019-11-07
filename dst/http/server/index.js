@@ -189,8 +189,8 @@ class HttpServer {
 
         } catch (error) {
             console.error(error);
-            const message = this.debug ? error.message : 'internal server error';
-            return context.code(500).message(message).end();
+            const message = this.debug ? error.message : undefined;
+            return context.code(500).end(message);
         }
 
     }

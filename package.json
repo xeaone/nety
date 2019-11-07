@@ -1,6 +1,6 @@
 {
 	"name": "nety",
-	"version": "0.0.10",
+	"version": "0.0.11",
 	"description": "Nety",
 	"main": "dst/index.js",
 	"engines": {

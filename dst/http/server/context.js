@@ -19,7 +19,6 @@ module.exports = class Context {
         const instance = options.instance;
 
         this._body = null;
-        this._message = null;
         this._secure = options.secure || instance.secure;
         this._host = options.host || instance.host || '';
         this._type = options.type || instance.type || 'default'
@@ -90,15 +89,6 @@ module.exports = class Context {
         }
     }
 
-    message (message) {
-        if (message) {
-            this._message = message;
-            return this;
-        } else {
-            return this._message;
-        }
-    }
-
     code (code) {
         if (code) {
             this.response.statusCode = code;
@@ -117,13 +107,11 @@ module.exports = class Context {
         }
     }
 
-    end (body) {
+    end (data) {
 
         const code = this.response.statusCode || 200;
-        const message = this._message || this.status[code] || '';
-
-        this._body = body || this._body;
-        body = body || this._body || { code, message };
+        const message =  this.status[code] || '';
+        const body = body || this._body || message;
 
         if (!this.response.hasHeader('content-type')) {
             const path = this.url.pathname;
