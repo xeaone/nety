@@ -54,7 +54,8 @@ module.exports = class Context {
     */
 
     set (name, value) {
-        if (name in this) throw new Error('Context - property defined');
+        if (name in this) return;
+        // if (name in this) throw new Error('Context - property defined');
         const enumerable = true;
         const property = { enumerable, value };
         Object.defineProperty(this, name, property);
@@ -77,15 +78,15 @@ module.exports = class Context {
     }
 
     head (name, value) {
-        if (value !== undefined) {
-            if (value === '') {
+        if (value === undefined) {
+            return this.response.getHeader(name);
+        } else {
+            if (value === '' || value === null) {
                 this.response.removeHeader(name);
             } else {
                 this.response.setHeader(name, value);
             }
             return this;
-        } else {
-            this.response.getHeader(name);
         }
     }
 
