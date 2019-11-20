@@ -89,13 +89,12 @@ module.exports = class Session {
 
         if (!data) throw new Error('Session - data required');
         if (!secret) throw new Error('Session - secret required');
-        if (typeof data === 'object') data.sid = sid;
 
         const sid = await this.sid();
-        const cookie = await this.sign(sid, { secret });
+        const cookie = await this.sign(sid, secret);
         const result = await this.set(sid, data);
 
-        context.cookie.set('sid', cookie);
+        context.head('set-cookie', `sid=${cookie}`);
 
         return result;
     }
@@ -117,7 +116,7 @@ module.exports = class Session {
             sign: this.sign,
             unsign: this.unsign,
             delete: this.delete,
-            create: this.create.bind(context)
+            create: this.create.bind(this, context)
         };
 
         const ignores = this.ignores;
