@@ -108,6 +108,24 @@ module.exports = class Session {
     }
 
     async handle (context) {
+
+        const plugin = {
+            sid: this.sid,
+            get: this.get,
+            set: this.set,
+            sign: this.sign,
+            unsign: this.unsign,
+            delete: this.delete,
+            create: this.create.bind(context)
+        };
+
+        const ignores = this.ignores;
+        const method = context.method;
+        const path = context.url.pathname;
+
+        const ignored = ignores.find(ignore => [path, method].includes(ignore));
+        if (ignored) return plugin;
+
         const header = context.headers['cookie'] || '';
         const cookies = header.split(/\s*;\s*/);
 
@@ -137,15 +155,7 @@ module.exports = class Session {
         const credential = validate.credential;
         context.set('credential', credential);
 
-        return {
-            sid: this.sid,
-            get: this.get,
-            set: this.set,
-            sign: this.sign,
-            unsign: this.unsign,
-            delete: this.delete,
-            create: this.create.bind(context)
-        };
+        return plugin;
     }
 
 
