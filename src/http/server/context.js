@@ -55,7 +55,6 @@ module.exports = class Context {
 
     set (name, value) {
         if (name in this) return;
-        // if (name in this) throw new Error('Context - property defined');
         const enumerable = true;
         const property = { enumerable, value };
         Object.defineProperty(this, name, property);
