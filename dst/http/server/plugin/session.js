@@ -20,7 +20,7 @@ module.exports = class Session {
         this.algorithm = options.algorithm || 'sha256';
 
         if (typeof this.realm !== 'string') throw new Error('Session - realm string required');
-        if (typeof this.secret !== 'string') throw new Error('Session - secret string required');
+        // if (typeof this.secret !== 'string') throw new Error('Session - secret string required');
         if (typeof this.scheme !== 'string') throw new Error('Session - scheme string  required');
         if (typeof this.validate !== 'function') throw new Error('Session - validate function required');
 
@@ -89,13 +89,12 @@ module.exports = class Session {
 
         if (!data) throw new Error('Session - data required');
         if (!secret) throw new Error('Session - secret required');
-        if (typeof data === 'object') data.sid = sid;
 
         const sid = await this.sid();
-        const cookie = await this.sign(sid, { secret });
+        const cookie = await this.sign(sid, secret);
         const result = await this.set(sid, data);
 
-        context.cookie.set('sid', cookie);
+        context.head('set-cookie', `sid=${cookie}`);
 
         return result;
     }
@@ -110,22 +109,22 @@ module.exports = class Session {
 
     async handle (context) {
 
-        const plugin = {
-            sid: this.sid,
-            get: this.get,
-            set: this.set,
-            sign: this.sign,
-            unsign: this.unsign,
-            delete: this.delete,
-            create: this.create.bind(context)
-        };
+        context.set('session', {
+            sid: this.sid.bind(this),
+            get: this.get.bind(this),
+            set: this.set.bind(this),
+            sign: this.sign.bind(this),
+            unsign: this.unsign.bind(this),
+            delete: this.delete.bind(this),
+            create: this.create.bind(this, context)
+        });
 
         const ignores = this.ignores;
         const method = context.method;
         const path = context.url.pathname;
 
         const ignored = ignores.find(ignore => [path, method].includes(ignore));
-        if (ignored) return plugin;
+        if (ignored) return;
 
         const header = context.headers['cookie'] || '';
         const cookies = header.split(/\s*;\s*/);
@@ -141,7 +140,6 @@ module.exports = class Session {
         if (!encoded) return this.unauthorized(context);
 
         const decoded = await this.unsign(encoded);
-
         if (!decoded) return this.unauthorized(context);
 
         const validate = await this.validate(context, decoded);
@@ -153,10 +151,8 @@ module.exports = class Session {
         if (validate.forbidden) return this.forbidden(context);
         if (!validate.valid) return this.unauthorized(context);
 
-        const credential = validate.credential;
-        context.set('credential', credential);
+        context.set('credential', validate.credential);
 
-        return plugin;
     }
 
 
