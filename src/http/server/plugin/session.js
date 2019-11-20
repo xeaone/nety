@@ -10,6 +10,7 @@ module.exports = class Session {
     constructor (options = {}) {
 
         this.scheme = 'session';
+        this.ignores = options.ignores || [];
         this.secret = options.secret || null;
         this.format = options.format || 'hex';
         this.realm = options.realm || 'secure';
