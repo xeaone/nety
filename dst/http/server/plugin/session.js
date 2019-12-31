@@ -10,6 +10,7 @@ module.exports = class Session {
     constructor (options = {}) {
 
         this.scheme = 'session';
+        this.name = options.name || 'sid'; // cookie name
         this.ignores = options.ignores || [];
         this.secret = options.secret || null;
         this.format = options.format || 'hex';
@@ -18,9 +19,10 @@ module.exports = class Session {
         this.seperator = options.seperator || '.';
         this.storage = options.storage || new Map();
         this.algorithm = options.algorithm || 'sha256';
+        this.expiration = options.expiration || 1000*60*60*24; // 24 hours
 
-        if (typeof this.realm !== 'string') throw new Error('Session - realm string required');
         // if (typeof this.secret !== 'string') throw new Error('Session - secret string required');
+        if (typeof this.realm !== 'string') throw new Error('Session - realm string required');
         if (typeof this.scheme !== 'string') throw new Error('Session - scheme string  required');
         if (typeof this.validate !== 'function') throw new Error('Session - validate function required');
 
@@ -60,43 +62,37 @@ module.exports = class Session {
         if (computedBuffer.length !== hmacBuffer.length) return null;
 
         const valid = Crypto.timingSafeEqual(computedBuffer, hmacBuffer);
-
         return valid ? text : null;
     }
 
-    async has (sid) {
-        if (!sid) throw new Error('Session - sid required');
-        return this.storage.has(sid);
+    async has () {
+        return this.storage.has.apply(this.storage, arguments);
     }
 
-    async get (sid) {
-        if (!sid) throw new Error('Session - sid required');
-        return this.storage.get(sid);
+    async get () {
+        return this.storage.get.apply(this.storage, arguments);
     }
 
-    async delete (sid) {
-        if (!sid) throw new Error('Session - sid required');
-        return this.storage.delete(sid);
+    async delete () {
+        return this.storage.delete.apply(this.storage, arguments);
     }
 
-    async set (sid, data) {
-        if (!sid) throw new Error('Session - sid required');
-        return this.storage.set(sid, data);
+    async set () {
+        return this.storage.set.apply(this.storage, arguments);
     }
 
-    async create (context, data, secret) {
+    async create (context, secret) {
         secret = secret || this.secret;
 
-        if (!data) throw new Error('Session - data required');
         if (!secret) throw new Error('Session - secret required');
 
         const sid = await this.sid();
-        const cookie = await this.sign(sid, secret);
-        const result = await this.set(sid, data);
+        const expiration = Date.now() + this.expiration;
+        const cookie = await this.sign(`${sid}.${expiration}`, secret);
 
         context.head('set-cookie', `sid=${cookie}`);
 
-        return result;
+        return sid;
     }
 
     async forbidden (context) {
@@ -105,6 +101,20 @@ module.exports = class Session {
 
     async unauthorized (context) {
         return context.code(401).head('www-authenticate', `${this.scheme} realm="${this.realm}"`).end();
+    }
+
+    async cookie (context) {
+        const header = context.headers['cookie'] || '';
+        const cookies = header.split(/\s*;\s*/);
+
+        for (const cookie of cookies) {
+            const [ name, value ] = cookie.split(/\s*=\s*/);
+            if (name === this.name) {
+                return QueryString.unescape(value);
+            }
+        }
+
+        return null;
     }
 
     async handle (context) {
@@ -126,23 +136,18 @@ module.exports = class Session {
         const ignored = ignores.find(ignore => [path, method].includes(ignore));
         if (ignored) return;
 
-        const header = context.headers['cookie'] || '';
-        const cookies = header.split(/\s*;\s*/);
-
-        let encoded;
-        for (const cookie of cookies) {
-            const [ name, value ] = cookie.split(/\s*=\s*/);
-            if (name === 'sid') {
-                encoded = QueryString.unescape(value);
-            }
-        }
-
+        const encoded = await this.cookie(context);
         if (!encoded) return this.unauthorized(context);
 
         const decoded = await this.unsign(encoded);
         if (!decoded) return this.unauthorized(context);
 
-        const validate = await this.validate(context, decoded);
+        const [ sid, expiration ] = decoded.split('.');
+
+        const now = Date.now();
+        if (expiration <= now) return this.unauthorized(context);
+
+        const validate = await this.validate(context, sid);
 
         if (!validate || typeof validate !== 'object') {
             throw new Error('Session - validate object required');
