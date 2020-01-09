@@ -10,7 +10,7 @@ module.exports = class Session {
     constructor (options = {}) {
 
         this.scheme = 'session';
-        this.name = options.name || 'sid'; // cookie name
+        this.name = options.name || 'session'; // cookie name
         this.ignores = options.ignores || [];
         this.secret = options.secret || null;
         this.format = options.format || 'hex';
@@ -20,6 +20,10 @@ module.exports = class Session {
         this.storage = options.storage || new Map();
         this.algorithm = options.algorithm || 'sha256';
         this.expiration = options.expiration || 1000*60*60*24; // 24 hours
+
+        this.secure = typeof options.secure === 'boolean' ? options.secure : true;
+        this.httpOnly = typeof options.httpOnly === 'boolean' ? options.httpOnly : true;
+        this.sameSite = typeof options.sameSite === 'string' ? options.sameSite : 'strict';
 
         // if (typeof this.secret !== 'string') throw new Error('Session - secret string required');
         if (typeof this.realm !== 'string') throw new Error('Session - realm string required');
@@ -81,6 +85,16 @@ module.exports = class Session {
         return this.storage.set.apply(this.storage, arguments);
     }
 
+    async destroy (context) {
+        let cookie = '';
+
+        if (this.secure) cookie += ';Secure';
+        if (this.httpOnly) cookie += ';HttpOnly';
+        if (this.sameSite) cookie += `;SameSite=${this.sameSite}`;
+
+        context.head('set-cookie', `${this.name}=${cookie};Max-Age=0`);
+    }
+
     async create (context, secret) {
         secret = secret || this.secret;
 
@@ -88,9 +102,15 @@ module.exports = class Session {
 
         const sid = await this.sid();
         const expiration = Date.now() + this.expiration;
-        const cookie = await this.sign(`${sid}.${expiration}`, secret);
 
-        context.head('set-cookie', `sid=${cookie}`);
+        let cookie = await this.sign(`${sid}.${expiration}`, secret);
+
+        if (this.secure) cookie += ';Secure';
+        if (this.httpOnly) cookie += ';HttpOnly';
+        if (this.sameSite) cookie += `;SameSite=${this.sameSite}`;
+        if (this.maxAge) cookie += `;Max-Age=${this.maxAge}`;
+
+        context.head('set-cookie', `${this.name}=${cookie}`);
 
         return sid;
     }
