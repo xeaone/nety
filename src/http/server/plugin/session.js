@@ -10,9 +10,9 @@ module.exports = class Session {
     constructor (options = {}) {
 
         this.scheme = 'session';
-        this.name = options.name || 'session'; // cookie name
         this.ignores = options.ignores || [];
         this.secret = options.secret || null;
+        this.name = options.name || 'session'; // cookie name
         this.format = options.format || 'hex';
         this.realm = options.realm || 'secure';
         this.validate = options.validate || null;
@@ -146,7 +146,8 @@ module.exports = class Session {
             sign: this.sign.bind(this),
             unsign: this.unsign.bind(this),
             delete: this.delete.bind(this),
-            create: this.create.bind(this, context)
+            create: this.create.bind(this, context),
+            destory: this.destory.bind(this, context)
         });
 
         const ignores = this.ignores;
