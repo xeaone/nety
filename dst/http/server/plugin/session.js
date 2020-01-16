@@ -147,7 +147,7 @@ module.exports = class Session {
             unsign: this.unsign.bind(this),
             delete: this.delete.bind(this),
             create: this.create.bind(this, context),
-            destory: this.destory.bind(this, context)
+            destroy: this.destroy.bind(this, context)
         });
 
         const ignores = this.ignores;
@@ -163,12 +163,12 @@ module.exports = class Session {
         const decoded = await this.unsign(encoded);
         if (!decoded) return this.unauthorized(context);
 
-        const [ sid, expiration ] = decoded.split('.');
-
+        const [ identifier, expiration ] = decoded.split('.');
         const now = Date.now();
+
         if (expiration <= now) return this.unauthorized(context);
 
-        const validate = await this.validate(context, sid);
+        const validate = await this.validate(context, identifier);
 
         if (!validate || typeof validate !== 'object') {
             throw new Error('Session - validate object required');
@@ -178,8 +178,6 @@ module.exports = class Session {
         if (!validate.valid) return this.unauthorized(context);
 
         context.set('credential', validate.credential);
-
     }
-
 
 }

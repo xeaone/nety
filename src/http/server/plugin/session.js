@@ -147,7 +147,7 @@ module.exports = class Session {
             unsign: this.unsign.bind(this),
             delete: this.delete.bind(this),
             create: this.create.bind(this, context),
-            destory: this.destory.bind(this, context)
+            destroy: this.destroy.bind(this, context)
         });
 
         const ignores = this.ignores;
