@@ -77,42 +77,62 @@ module.exports = class File {
 
     }
 
+    async valid (data) {
+       const parts = data.split('/');
+       for (const part of parts) {
+           if (Buffer.byteLength(part) >= 255) {
+               return false;
+           }
+       }
+       return true;
+    }
+
     async method (context, options = {}) {
         const data = { ...options };
 
+        data.spa = typeof data.spa === 'boolean' ? data.spa : this.spa;
+
         data.file = data.file || this.file;
         data.error = data.error || this.error;
-        data.spa = typeof data.spa === 'boolean' ? data.spa : this.spa;
-        data.folder = data.folder ? Path.resolve(data.folder) : this.folder;
+        data.folder = data.folder || this.folder;
+        data.path = data.path || data.file || this.file;
 
-        data.path = data.path || data.file;
-        data.path = data.path.replace(this.restrict, '.');
+        data.file = Path.normalize(data.file);
+        data.path = Path.normalize(data.path);
+        data.error = Path.normalize(data.error);
+        data.folder = Path.normalize(data.folder);
+
+        data.folder = Path.resolve(data.folder);
         data.path = Path.extname(data.path) ? data.path : Path.join(data.path, data.file);
+
+        const [ fileValid, pathValid, errorValid, folderValid  ] = await Promise.all([
+            this.valid(data.file),
+            this.valid(data.path),
+            this.valid(data.error),
+            this.valid(data.folder)
+        ]);
+
+        if (!fileValid || !pathValid || !errorValid || !folderValid) {
+            return context.code(414);
+        }
 
         const spaPath = Path.join(data.folder, data.file);
         const fullPath = Path.join(data.folder, data.path);
         const errorPath = Path.join(data.folder, data.error);
 
-        if (fullPath.indexOf(data.folder) !== 0) {
-            context.code(403);
+        if (
+            !spaPath.startsWith(data.folder) ||
+            !fullPath.startsWith(data.folder) ||
+            !errorPath.startsWith(data.folder)
+        ) {
+            return context.code(403);
 
-            try {
-                const stat = await Stat(errorPath);
-                await this.stream(context, errorPath, stat);
-            } catch (e) { /* ignore */ }
-
-            return;
-        }
-
-        if (fullPath.indexOf('\u0000') !== -1) {
-            context.code(404);
-
-            try {
-                const stat = await Stat(errorPath);
-                await this.stream(context, errorPath, stat);
-            } catch (e) { /* ignore */ }
-
-            return;
+            // try {
+            //     const stat = await Stat(errorPath);
+            //     await this.stream(context, errorPath, stat);
+            // } catch (e) { /* ignore */ }
+            //
+            // return;
         }
 
         try {
