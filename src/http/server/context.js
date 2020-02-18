@@ -25,13 +25,12 @@ module.exports = class Context {
         this._encoding = options.encoding || instance.encoding || 'utf8';
 
         const headers = Object.freeze({ ...request.headers });
-        const path = request.headers[':path'] || request.url;
         const method = (request.headers[':method'] || request.method).toLowerCase();
+        const [ , prefix, path ] = (request.headers[':path'] || request.url).match(/(^\/+)?(.*)/);
         const scheme = (request.headers[':scheme'] || this._secure ? 'https' : 'http').toLowerCase();
         const authority = (request.headers[':authority'] || request.headers['host'] || this._host).toLowerCase();
-        const url = new Url(`${scheme}://${authority}`);
 
-        url.pathname = path;
+        const url = new Url(`${path}`, `${scheme}://${authority}${prefix || '/'}`);
 
         Object.defineProperties(this, {
             request: { enumerable: true, value: request },
