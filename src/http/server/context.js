@@ -30,7 +30,11 @@ module.exports = class Context {
         const scheme = (request.headers[':scheme'] || this._secure ? 'https' : 'http').toLowerCase();
         const authority = (request.headers[':authority'] || request.headers['host'] || this._host).toLowerCase();
 
+<<<<<<< HEAD
         const url = new Url(`${path}`, `${scheme}://${authority}${prefix || '/'}`);
+=======
+        const url = new Url(`${path}`, `${scheme}://${authority}/`);
+>>>>>>> 9aab1a781444302f4022357a7bdb065d17cde47b
 
         Object.defineProperties(this, {
             request: { enumerable: true, value: request },
