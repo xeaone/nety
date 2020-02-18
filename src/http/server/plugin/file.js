@@ -8,11 +8,21 @@ const Stat = Util.promisify(Fs.stat);
 module.exports = class File {
 
     constructor (options = {}) {
-        this.restrict = /^(\.)+/;
+        this.folder = options.folder || 'public';
         this.file = options.file || 'index.html';
         this.error = options.error || 'error.html';
-        this.folder = Path.resolve(options.folder || 'public');
         this.spa = typeof options.spa === 'boolean' ? options.spa : false;
+
+        if (!this.file) throw new Error('file option required');
+        if (!this.error) throw new Error('error option required');
+        if (!this.folder) throw new Error('folder option required');
+
+        // this.restrict = /^(\.)+/;
+        // this.illegal = /[\/\?<>\\:\*\|"]/g;
+        // this.control = /[\x00-\x1f\x80-\x9f]/g;
+        // this.reserved = /^\.+$/;
+        // this.windowsReserved = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+        // this.windowsTrailing = /[\. ]+$/;
     }
 
     async range (range, size) {
