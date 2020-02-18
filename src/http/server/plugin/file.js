@@ -92,7 +92,6 @@ module.exports = class File {
             } catch (e) { /* ignore */ }
 
             return;
-            // return context.end();
         }
 
         if (fullPath.indexOf('\u0000') !== -1) {
@@ -103,7 +102,6 @@ module.exports = class File {
                 await this.stream(context, errorPath, stat);
             } catch (e) { /* ignore */ }
 
-            // return context.end();
             return;
         }
 
@@ -133,7 +131,6 @@ module.exports = class File {
 
             }
 
-            // return context.end();
         } catch (error) {
 
             if (error.code === 'ENOENT' && data.spa) {
@@ -153,7 +150,6 @@ module.exports = class File {
 
                 }
 
-                // return context.end();
             } else if (error.code === 'ENOENT' || error.code === 'EACCES' || error.code === 'EPERM') {
                 context.code(error.code === 'ENOENT' ? 404 : 403);
 
@@ -162,7 +158,6 @@ module.exports = class File {
                     await this.stream(context, errorPath, stat);
                 } catch (e) { /* ignore */ }
 
-                // return context.end();
             } else {
                 throw error;
             }
@@ -173,7 +168,6 @@ module.exports = class File {
             context.code(data.code);
         }
 
-        // return context.end();
     }
 
     async handle (context) {
