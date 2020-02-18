@@ -8,11 +8,21 @@ const Stat = Util.promisify(Fs.stat);
 module.exports = class File {
 
     constructor (options = {}) {
-        this.restrict = /^(\.)+/;
+        this.folder = options.folder || 'public';
         this.file = options.file || 'index.html';
         this.error = options.error || 'error.html';
-        this.folder = Path.resolve(options.folder || 'public');
         this.spa = typeof options.spa === 'boolean' ? options.spa : false;
+
+        if (!this.file) throw new Error('file option required');
+        if (!this.error) throw new Error('error option required');
+        if (!this.folder) throw new Error('folder option required');
+
+        // this.restrict = /^(\.)+/;
+        // this.illegal = /[\/\?<>\\:\*\|"]/g;
+        // this.control = /[\x00-\x1f\x80-\x9f]/g;
+        // this.reserved = /^\.+$/;
+        // this.windowsReserved = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+        // this.windowsTrailing = /[\. ]+$/;
     }
 
     async range (range, size) {
@@ -67,44 +77,62 @@ module.exports = class File {
 
     }
 
+    async valid (data) {
+       const parts = data.split('/');
+       for (const part of parts) {
+           if (Buffer.byteLength(part) >= 255) {
+               return false;
+           }
+       }
+       return true;
+    }
+
     async method (context, options = {}) {
         const data = { ...options };
 
+        data.spa = typeof data.spa === 'boolean' ? data.spa : this.spa;
+
         data.file = data.file || this.file;
         data.error = data.error || this.error;
-        data.spa = typeof data.spa === 'boolean' ? data.spa : this.spa;
-        data.folder = data.folder ? Path.resolve(data.folder) : this.folder;
+        data.folder = data.folder || this.folder;
+        data.path = data.path || data.file || this.file;
 
-        data.path = data.path || data.file;
-        data.path = data.path.replace(this.restrict, '.');
+        data.file = Path.normalize(data.file);
+        data.path = Path.normalize(data.path);
+        data.error = Path.normalize(data.error);
+        data.folder = Path.normalize(data.folder);
+
+        data.folder = Path.resolve(data.folder);
         data.path = Path.extname(data.path) ? data.path : Path.join(data.path, data.file);
+
+        const [ fileValid, pathValid, errorValid, folderValid  ] = await Promise.all([
+            this.valid(data.file),
+            this.valid(data.path),
+            this.valid(data.error),
+            this.valid(data.folder)
+        ]);
+
+        if (!fileValid || !pathValid || !errorValid || !folderValid) {
+            return context.code(414);
+        }
 
         const spaPath = Path.join(data.folder, data.file);
         const fullPath = Path.join(data.folder, data.path);
         const errorPath = Path.join(data.folder, data.error);
 
-        if (fullPath.indexOf(data.folder) !== 0) {
-            context.code(403);
+        if (
+            !spaPath.startsWith(data.folder) ||
+            !fullPath.startsWith(data.folder) ||
+            !errorPath.startsWith(data.folder)
+        ) {
+            return context.code(403);
 
-            try {
-                const stat = await Stat(errorPath);
-                await this.stream(context, errorPath, stat);
-            } catch (e) { /* ignore */ }
-
-            return;
-            // return context.end();
-        }
-
-        if (fullPath.indexOf('\u0000') !== -1) {
-            context.code(404);
-
-            try {
-                const stat = await Stat(errorPath);
-                await this.stream(context, errorPath, stat);
-            } catch (e) { /* ignore */ }
-
-            // return context.end();
-            return;
+            // try {
+            //     const stat = await Stat(errorPath);
+            //     await this.stream(context, errorPath, stat);
+            // } catch (e) { /* ignore */ }
+            //
+            // return;
         }
 
         try {
@@ -133,7 +161,6 @@ module.exports = class File {
 
             }
 
-            // return context.end();
         } catch (error) {
 
             if (error.code === 'ENOENT' && data.spa) {
@@ -153,7 +180,6 @@ module.exports = class File {
 
                 }
 
-                // return context.end();
             } else if (error.code === 'ENOENT' || error.code === 'EACCES' || error.code === 'EPERM') {
                 context.code(error.code === 'ENOENT' ? 404 : 403);
 
@@ -162,7 +188,6 @@ module.exports = class File {
                     await this.stream(context, errorPath, stat);
                 } catch (e) { /* ignore */ }
 
-                // return context.end();
             } else {
                 throw error;
             }
@@ -173,7 +198,6 @@ module.exports = class File {
             context.code(data.code);
         }
 
-        // return context.end();
     }
 
     async handle (context) {
