@@ -115,9 +115,9 @@ module.exports = class Session {
         const computed = Crypto
             .createHmac(this.hash, signature)
             .update(data)
-            .digest(this.encoding);
+            .digest();
 
-        if (Buffer.byteLength(computed) !== Buffer.byteLength(signed)) return null;
+        if (computed.byteLength !== signed.byteLength) return null;
 
         const valid = Crypto.timingSafeEqual(computed, signed);
 
