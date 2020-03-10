@@ -31,10 +31,11 @@ module.exports = class Session {
         this.httpOnly = typeof options.httpOnly === 'boolean' ? options.httpOnly : true;
         this.sameSite = typeof options.sameSite === 'string' ? options.sameSite : 'strict';
 
-        this.key = this.key || 32;
-        this.salt = this.salt || 16;
-        this.vector = this.vector || 16;
-        this.hash = this.hash || 'sha512';
+        this.key = options.key || 32;
+        this.tag = options.tag || 16;
+        this.salt = options.salt || 16;
+        this.vector = options.vector || 16;
+        this.hash = options.hash || 'sha512';
         this.encoding = options.encoding || 'hex';
         this.iterations = options.iterations || 10000;
         this.algorithm = options.algorithm || 'aes-256-gcm';
@@ -71,13 +72,11 @@ module.exports = class Session {
         if (!data) throw new Error('Session - data required');
         if (!secret) throw new Error('Session - secret required');
 
-        const decoded = Buffer.from(data, this.encoding).toString('utf8');
-
-        console.warn('fixe these slices');
+        const decoded = Buffer.from(data, this.encoding);
 
         const vector = decoded.slice(-this.vector);
-        const salt = decoded.slice(-(this.salt+this.vector), this.salt);
-        const tag = decoded.slice(-(this.tag+this.salt+this.vector), this.tag);
+        const salt = decoded.slice(-(this.salt+this.vector), -this.vector);
+        const tag = decoded.slice(-(this.tag+this.salt+this.vector), -(this.salt+this.vector));
         const encrypted = decoded.slice(0, -(this.tag+this.salt+this.vector));
 
         const key = await Pbkdf2(secret, salt, this.iterations, this.key, this.hash);
@@ -109,7 +108,7 @@ module.exports = class Session {
         if (!signature) throw new Error('Session - signature required');
 
         const index = data.lastIndexOf(this.seperator);
-        const signed = Buffer.from(data.slice(index+1), 'hex');
+        const signed = Buffer.from(data.slice(index+1), this.encoding);
 
         data = data.slice(0, index);
 
