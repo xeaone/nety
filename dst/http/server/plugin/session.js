@@ -1,9 +1,18 @@
 'use strict';
 
+/*
+    Base64 URL: https://www.ietf.org/rfc/rfc4648.txt
+    Secure Session Cookies: https://tools.ietf.org/html/rfc6896
+*/
+
 const Util = require('util');
 const Crypto = require('crypto');
 const QueryString = require('querystring');
+const Pbkdf2 = Util.promisify(Crypto.pbkdf2);
 const RandomBytes = Util.promisify(Crypto.randomBytes);
+
+// 24 hours
+const EXPIRATION = 1000*60*60*24;
 
 module.exports = class Session {
 
@@ -11,78 +20,182 @@ module.exports = class Session {
 
         this.scheme = 'session';
         this.ignores = options.ignores || [];
-        this.secret = options.secret || null;
-        this.name = options.name || 'session'; // cookie name
-        this.format = options.format || 'hex';
+        this.name = options.name || 'session';
         this.realm = options.realm || 'secure';
         this.validate = options.validate || null;
-        this.seperator = options.seperator || '.';
-        this.storage = options.storage || new Map();
-        this.algorithm = options.algorithm || 'sha256';
-        this.expiration = options.expiration || 1000*60*60*24; // 24 hours
-
+        this.expiration = options.expiration || EXPIRATION;
+        this.parse = typeof options.parse === 'boolean' ? options.parse : true;
         this.secure = typeof options.secure === 'boolean' ? options.secure : true;
         this.httpOnly = typeof options.httpOnly === 'boolean' ? options.httpOnly : true;
         this.sameSite = typeof options.sameSite === 'string' ? options.sameSite : 'strict';
 
-        // if (typeof this.secret !== 'string') throw new Error('Session - secret string required');
+        this.key = options.key || 32;
+        this.tag = options.tag || 16;
+        this.salt = options.salt || 16;
+        this.vector = options.vector || 16;
+        this.hash = options.hash || 'sha512';
+        this.iterations = options.iterations || 10000;
+        this.algorithm = options.algorithm || 'aes-256-gcm';
+
+        this.secret = options.secret || null;
+        this.signature = options.signature || null;
+
+        if (typeof this.secret !== 'string') throw new Error('Session - secret string required');
+        if (typeof this.signature !== 'string') throw new Error('Session - signature string required');
+
         if (typeof this.realm !== 'string') throw new Error('Session - realm string required');
         if (typeof this.scheme !== 'string') throw new Error('Session - scheme string  required');
         if (typeof this.validate !== 'function') throw new Error('Session - validate function required');
 
     }
 
-    async sid () {
-        const bytes = await RandomBytes(16);
-        const sid = bytes.toString('hex');
-        return sid;
+    // box () {
+    //     return [ ...arguments ].join('|');
+    // }
+    //
+    // unbox (data) {
+    //     return data.split('|');
+    // }
+
+    encode (data) {
+        return Buffer
+            .from(data)
+            .toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=/g, '');
     }
 
-    async sign (data, secret) {
+    decode (data) {
+        return Buffer.from(
+            (data + '==='.slice((data.length + 3) % 4))
+            .replace(/-/g, '+')
+            .replace(/_/g, '/'),
+            'base64'
+        );
+    }
+
+    async encrypt (data, secret) {
         secret = secret || this.secret;
 
+        if (!data) throw new Error('Session - data required');
         if (!secret) throw new Error('Session - secret required');
-        if (typeof data !== 'string') throw new Error('Session - data string required');
 
-        const hex = Buffer.from(data, 'utf8').toString('hex');
-        const hmac = Crypto.createHmac(this.algorithm, secret).update(data);
+        const salt = await RandomBytes(this.salt);
+        const vector = await RandomBytes(this.vector);
+        const key = await Pbkdf2(secret, salt, this.iterations, this.key, this.hash);
+        const cipher = Crypto.createCipheriv(this.algorithm, key, vector);
 
-        return hex + this.seperator + hmac.digest(this.format);
+        const encrypted = Buffer.concat([
+            cipher.update(data),
+            cipher.final(),
+            cipher.getAuthTag(),
+            salt,
+            vector
+        ]);
+
+        return this.encode(encrypted);
     }
 
-    async unsign (data, secret) {
+    async decrypt (encrypted, secret) {
         secret = secret || this.secret;
 
+        if (!encrypted) throw new Error('Session - encrypted required');
         if (!secret) throw new Error('Session - secret required');
-        if (typeof data !== 'string') throw new Error('Session - data string required');
 
-        const [ hex, hmac ] = data.split(this.seperator);
-        const text = Buffer.from(hex, 'hex').toString('utf8');
-        const computed = Crypto.createHmac(this.algorithm, secret).update(text).digest(this.format);
+        const decoded = this.decode(encrypted);
 
-        const hmacBuffer = Buffer.from(hmac);
-        const computedBuffer = Buffer.from(computed);
+        const vector = decoded.slice(-this.vector);
+        const salt = decoded.slice(-(this.salt+this.vector), -this.vector);
+        const tag = decoded.slice(-(this.tag+this.salt+this.vector), -(this.salt+this.vector));
+        const data = decoded.slice(0, -(this.tag+this.salt+this.vector));
 
-        if (computedBuffer.length !== hmacBuffer.length) return null;
+        const key = await Pbkdf2(secret, salt, this.iterations, this.key, this.hash);
+        const decipher = Crypto.createDecipheriv(this.algorithm, key, vector);
 
-        const valid = Crypto.timingSafeEqual(computedBuffer, hmacBuffer);
-        return valid ? text : null;
+        decipher.setAuthTag(tag);
+
+        const buffer = Buffer.concat([
+            decipher.update(data),
+            decipher.final()
+        ]);
+
+        return buffer.toString('utf8');
     }
 
-    async has () {
-        return this.storage.has.apply(this.storage, arguments);
+    async sign (encrypted, stamped, signature) {
+        signature = signature || this.signature;
+
+        if (!encrypted) throw new Error('Session - encrypted required');
+        if (!stamped) throw new Error('Session - stamped required');
+        if (!signature) throw new Error('Session - signature required');
+
+        const signed = Crypto
+            .createHmac(this.hash, signature)
+            .update(`${encrypted}|${stamped}`)
+            .digest();
+
+        return this.encode(signed);
     }
 
-    async get () {
-        return this.storage.get.apply(this.storage, arguments);
+    async unsign (encrypted, stamped, signed, signature) {
+        signature = signature || this.signature;
+
+        if (!encrypted) throw new Error('Session - encrypted required');
+        if (!stamped) throw new Error('Session - stamped required');
+        if (!signed) throw new Error('Session - signed required');
+        if (!signature) throw new Error('Session - signature required');
+
+        const decoded = this.decode(signed);
+
+        const computed = Crypto
+            .createHmac(this.hash, signature)
+            .update(`${encrypted}|${stamped}`)
+            .digest();
+
+        if (computed.byteLength !== decoded.byteLength) return false;
+
+        return Crypto.timingSafeEqual(computed, decoded);
     }
 
-    async delete () {
-        return this.storage.delete.apply(this.storage, arguments);
+    async stamp (time) {
+        if (!time) throw new Error('Session - time required');
+        const expiration = time + this.expiration;
+        return this.encode(Buffer.from(`${expiration}`, 'utf8'));
     }
 
-    async set () {
-        return this.storage.set.apply(this.storage, arguments);
+    async unstamp (time) {
+        if (!time) throw new Error('Session - time required');
+
+        const decoded = this.decode(time).toString('utf8');
+        const expiration = Number(decoded);
+
+        if (!expiration) return false;
+
+        return Date.now() < expiration;
+    }
+
+    async create (context, data) {
+        if (!data) throw new Error('Session - data required');
+
+        const time = Date.now();
+        const parsed = this.parse ? JSON.stringify(data) : data;
+        const encrypted = await this.encrypt(parsed);
+        const stamped = await this.stamp(time);
+        const signed = await this.sign(encrypted, stamped);
+
+        let cookie = `${this.name}=${encrypted}|${stamped}|${signed}`;
+
+        if (this.secure) cookie += ';Secure';
+        if (this.httpOnly) cookie += ';HttpOnly';
+        if (this.sameSite) cookie += `;SameSite=${this.sameSite}`;
+
+        if (this.maxAge) cookie += `;Max-Age=${this.maxAge}`;
+        else cookie += `;Max-Age=${time + this.expiration}`;
+
+        if (Buffer.byteLength(cookie) > 4090) throw new Error('Session - cookie size invalid');
+
+        context.head('set-cookie', cookie);
     }
 
     async destroy (context) {
@@ -93,26 +206,6 @@ module.exports = class Session {
         if (this.sameSite) cookie += `;SameSite=${this.sameSite}`;
 
         context.head('set-cookie', `${this.name}=${cookie};Max-Age=0`);
-    }
-
-    async create (context, secret) {
-        secret = secret || this.secret;
-
-        if (!secret) throw new Error('Session - secret required');
-
-        const sid = await this.sid();
-        const expiration = Date.now() + this.expiration;
-
-        let cookie = await this.sign(`${sid}.${expiration}`, secret);
-
-        if (this.secure) cookie += ';Secure';
-        if (this.httpOnly) cookie += ';HttpOnly';
-        if (this.sameSite) cookie += `;SameSite=${this.sameSite}`;
-        if (this.maxAge) cookie += `;Max-Age=${this.maxAge}`;
-
-        context.head('set-cookie', `${this.name}=${cookie}`);
-
-        return sid;
     }
 
     async forbidden (context) {
@@ -140,12 +233,6 @@ module.exports = class Session {
     async handle (context) {
 
         context.set('session', {
-            sid: this.sid.bind(this),
-            get: this.get.bind(this),
-            set: this.set.bind(this),
-            sign: this.sign.bind(this),
-            unsign: this.unsign.bind(this),
-            delete: this.delete.bind(this),
             create: this.create.bind(this, context),
             destroy: this.destroy.bind(this, context)
         });
@@ -157,18 +244,26 @@ module.exports = class Session {
         const ignored = ignores.find(ignore => [path, method].includes(ignore));
         if (ignored) return;
 
-        const encoded = await this.cookie(context);
-        if (!encoded) return this.unauthorized(context);
+        const cookie = await this.cookie(context);
+        if (!cookie) return this.unauthorized(context);
 
-        const decoded = await this.unsign(encoded);
-        if (!decoded) return this.unauthorized(context);
+        const unboxed = cookie.split('|');
+        if (unboxed.length !== 3) return this.unauthorized(context);
 
-        const [ identifier, expiration ] = decoded.split('.');
-        const now = Date.now();
+        const [ encrypted, stamped, signed ] = unboxed;
 
-        if (expiration <= now) return this.unauthorized(context);
+        const unsigned = await this.unsign(encrypted, stamped, signed);
+        if (!unsigned) return this.unauthorized(context);
 
-        const validate = await this.validate(context, identifier);
+        const unstamped = await this.unstamp(stamped);
+        if (!unstamped) return this.forbidden(context);
+
+        const decrypted = await this.decrypt(encrypted);
+        if (!decrypted) return this.unauthorized(context);
+
+        const data = this.parse ? JSON.parse(decrypted) : decrypted;
+
+        const validate = await this.validate(context, data);
 
         if (!validate || typeof validate !== 'object') {
             throw new Error('Session - validate object required');
