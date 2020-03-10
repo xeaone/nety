@@ -31,12 +31,12 @@ module.exports = class Session {
         this.httpOnly = typeof options.httpOnly === 'boolean' ? options.httpOnly : true;
         this.sameSite = typeof options.sameSite === 'string' ? options.sameSite : 'strict';
 
-        this.key = this.key || 64;
-        this.salt = this.salt || 64;
+        this.key = this.key || 32;
+        this.salt = this.salt || 16;
         this.vector = this.vector || 16;
-        this.hash = this.hash || 'sha256';
+        this.hash = this.hash || 'sha512';
         this.encoding = options.encoding || 'hex';
-        this.iterations = options.iterations || 999999;
+        this.iterations = options.iterations || 10000;
         this.algorithm = options.algorithm || 'aes-256-gcm';
 
         this.secret = options.secret || null;
@@ -62,7 +62,7 @@ module.exports = class Session {
         const key = await Pbkdf2(secret, salt, this.iterations, this.key, this.hash);
         const cipher = Crypto.createCipheriv(this.algorithm, key, vector);
 
-        return Buffer.concat([ cipher.update(data), cipher.final(), cipher.getAuthTag(), vector, salt ]).toString(this.encoding);
+        return Buffer.concat([ cipher.update(data), cipher.final(), cipher.getAuthTag(), salt, vector ]).toString(this.encoding);
     }
 
     async decrypt (data, secret) {
@@ -71,16 +71,21 @@ module.exports = class Session {
         if (!data) throw new Error('Session - data required');
         if (!secret) throw new Error('Session - secret required');
 
-        const buffer = Buffer.from(data, this.encoding);
-        const vector = buffer.splice(-this.vector);
-        const salt = buffer.splice(-this.salt);
-        const tag = buffer.splice(-this.tag);
+        const decoded = Buffer.from(data, this.encoding).toString('utf8');
+
+        console.warn('fixe these slices');
+
+        const vector = decoded.slice(-this.vector);
+        const salt = decoded.slice(-(this.salt+this.vector), this.salt);
+        const tag = decoded.slice(-(this.tag+this.salt+this.vector), this.tag);
+        const encrypted = decoded.slice(0, -(this.tag+this.salt+this.vector));
+
         const key = await Pbkdf2(secret, salt, this.iterations, this.key, this.hash);
         const decipher = Crypto.createDecipheriv(this.algorithm, key, vector);
 
         decipher.setAuthTag(tag);
 
-        return Buffer.concat([ decipher.update(buffer), decipher.final() ]).toString('utf8');
+        return Buffer.concat([ decipher.update(encrypted), decipher.final() ]).toString('utf8');
     }
 
     async sign (data, signature) {
@@ -89,9 +94,12 @@ module.exports = class Session {
         if (!data) throw new Error('Session - data required');
         if (!signature) throw new Error('Session - signature required');
 
-        const hmac = Crypto.createHmac(this.hash, signature).update(data);
+        const signed = Crypto
+            .createHmac(this.hash, signature)
+            .update(data)
+            .digest(this.encoding);
 
-        return [ data, hmac.digest(this.encoding) ].join(this.seperator);
+        return [ data, signed ].join(this.seperator);
     }
 
     async unsign (data, signature) {
@@ -100,16 +108,68 @@ module.exports = class Session {
         if (!data) throw new Error('Session - data required');
         if (!signature) throw new Error('Session - signature required');
 
-        const [ dataRaw, signatureRaw ] = data.split(this.seperator);
+        const index = data.lastIndexOf(this.seperator);
+        const signed = Buffer.from(data.slice(index+1), 'hex');
 
-        const computed = Crypto.createHmac(this.hash, signatureRaw).update(dataRaw).digest(this.encoding);
-        const signatureBuffer = Buffer.from(signatureRaw);
-        const computedBuffer = Buffer.from(computed);
+        data = data.slice(0, index);
 
-        if (computedBuffer.length !== signatureBuffer.length) return null;
+        const computed = Crypto
+            .createHmac(this.hash, signature)
+            .update(data)
+            .digest(this.encoding);
 
-        const valid = Crypto.timingSafeEqual(computedBuffer, signatureBuffer);
-        return valid ? dataRaw : null;
+        if (Buffer.byteLength(computed) !== Buffer.byteLength(signed)) return null;
+
+        const valid = Crypto.timingSafeEqual(computed, signed);
+
+        return valid ? data : null;
+    }
+
+    async stamp (data) {
+        if (!data) throw new Error('Session - data required');
+
+        const expiration = Date.now() + this.expiration;
+        const stamp = Buffer.from(`${expiration}`, 'utf8').toString(this.encoding);
+
+        return [ data, stamp ].join(this.seperator);
+    }
+
+    async unstamp (data) {
+        if (!data) throw new Error('Session - data required');
+
+        const index = data.lastIndexOf(this.seperator);
+        const encoded = data.slice(index+1);
+        const decoded = Buffer.from(encoded, this.encoding).toString('utf8');
+        const expiration = Number(decoded);
+
+        data = data.slice(0, index);
+
+        const now = Date.now();
+
+        return now < expiration ? data : null;
+    }
+
+    async create (context, data) {
+        if (!data) throw new Error('Session - data required');
+
+        data = this.parse ? JSON.stringify(data) : data;
+
+        data = await this.encrypt(data);
+        data = await this.stamp(data);
+        data = await this.sign(data);
+
+        if (this.secure) data += ';Secure';
+        if (this.httpOnly) data += ';HttpOnly';
+        if (this.sameSite) data += `;SameSite=${this.sameSite}`;
+
+        if (this.maxAge) data += `;Max-Age=${this.maxAge}`;
+        else data += `;Max-Age=${Date.now() + this.expiration}`;
+
+        data = `${this.name}=${data}`;
+
+        if (Buffer.byteLength(data) > 4090) throw new Error('Session - cookie size invalid');
+
+        context.head('set-cookie', data);
     }
 
     async destroy (context) {
@@ -120,26 +180,6 @@ module.exports = class Session {
         if (this.sameSite) cookie += `;SameSite=${this.sameSite}`;
 
         context.head('set-cookie', `${this.name}=${cookie};Max-Age=0`);
-    }
-
-    async create (context, data) {
-        if (!data) throw new Error('Session - data required');
-
-        const expiration = Date.now() + this.expiration;
-
-        data = this.parse ? JSON.stringify(data) : data;
-        data = await this.encrypt(data);
-        data = [ data, `${expiration}`.toString(this.encoding) ].join(this.seperator);
-        data = await this.sign(data);
-
-        if (this.secure) data += ';Secure';
-        if (this.httpOnly) data += ';HttpOnly';
-        if (this.sameSite) data += `;SameSite=${this.sameSite}`;
-
-        if (this.maxAge) data += `;Max-Age=${this.maxAge}`;
-        else data += `;Max-Age=${expiration}`;
-
-        context.head('set-cookie', `${this.name}=${data}`);
     }
 
     async forbidden (context) {
@@ -181,16 +221,13 @@ module.exports = class Session {
         const cookie = await this.cookie(context);
         if (!cookie) return this.unauthorized(context);
 
-        const parts = cookie.split(this.seperator);
-        if (parts.length !== 3) return this.forbidden(context);
-
-        const expiration = Number(Buffer.from(parts[1], this.encoding).toString('utf8'));
-        if (expiration <= Date.now()) return this.forbidden(context);
-
-        const unsigned = await this.unsign(`${parts[0]}${this.seperator}${parts[2]}`);
+        const unsigned = await this.unsign(cookie);
         if (!unsigned) return this.unauthorized(context);
 
-        const decrypted = await this.decrypt(unsigned);
+        const unstamped = await this.unstamp(unsigned);
+        if (!unstamped) return this.forbidden(context);
+
+        const decrypted = await this.decrypt(unstamped);
         if (!decrypted) return this.unauthorized(context);
 
         const data = this.parse ? JSON.parse(decrypted) : decrypted;
