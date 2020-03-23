@@ -2,10 +2,12 @@
 
 const Querystring = require('querystring');
 
+const MB = 1e6;  // 1mb
+
 module.exports = class Payload {
 
     constructor (options = {}) {
-        this.maxBytes = options.maxBytes || 1e6; // 1mb
+        this.maxBytes = options.maxBytes || MB;
     }
 
     async data (context) {
@@ -34,6 +36,7 @@ module.exports = class Payload {
         const data = await this.data(context);
 
         if (data === null) return context.code(413).end();
+        if (!data.length) return {};
 
         const type = context.request.headers['content-type'] || '';
 
