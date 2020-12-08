@@ -256,7 +256,7 @@ module.exports = class Session {
         if (!unsigned) return this.unauthorized(context);
 
         const unstamped = await this.unstamp(stamped);
-        if (!unstamped) return this.forbidden(context);
+        if (!unstamped) return this.unauthorized(context);
 
         const decrypted = await this.decrypt(encrypted);
         if (!decrypted) return this.unauthorized(context);
