@@ -2,12 +2,11 @@
 	"name": "nety",
 	"version": "0.3.3",
 	"description": "Nety",
-	"main": "dst/index.js",
+	"main": "src/index.js",
 	"engines": {
 		"node": ">=7.6.0"
 	},
 	"scripts": {
-        "build": "rm -r dst/* && cp -r src/. dst",
 		"test": "nodemon --watch src --watch tst tst/server.js"
 	},
 	"repository": {

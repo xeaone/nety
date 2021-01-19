@@ -189,7 +189,7 @@ class HttpServer {
 
         } catch (error) {
             const message = this.debug ? error.message : undefined;
-            if (!error.code) console.error(error);
+            if (typeof error.code !== 'number' || error.code === 500) console.error(error);
             const code = typeof error.code === 'number' ? error.code : 500;
             return context.code(code).end(message);
         }
