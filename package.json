@@ -1,6 +1,6 @@
 {
 	"name": "nety",
-	"version": "0.3.3",
+	"version": "0.3.4",
 	"description": "Nety",
 	"main": "src/index.js",
 	"engines": {
