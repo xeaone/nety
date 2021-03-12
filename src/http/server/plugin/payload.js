@@ -6,14 +6,15 @@ const MB = 1e6;  // 1mb
 
 module.exports = class Payload {
 
-    constructor (options = {}) {
+    constructor(options = {}) {
         this.maxBytes = options.maxBytes || MB;
     }
 
-    async data (context) {
+    async data(context) {
         return new Promise((resolve, reject) => {
-            const chunks = [];
+            let chunks = '';
 
+            context.request.setEncoding('utf8');
             context.request.on('end', () => resolve(chunks));
             context.request.on('error', (error) => reject(error));
 
@@ -22,14 +23,14 @@ module.exports = class Payload {
                     context.request.connection.destroy();
                     resolve(null);
                 } else {
-                    chunks.push(chunk);
+                    chunks += chunk;
                 }
             });
 
         });
     }
 
-    async handle (context) {
+    async handle(context) {
 
         if (context.method !== 'post') return {};
 
