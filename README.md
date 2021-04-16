@@ -44,7 +44,7 @@ const basic = new Basic({ validate, secret });
 
 const server = new Server({
     port: 8080,
-    version: 2,
+    // version: 2, http2 experimental
     debug: true,
     host: 'localhost'
 });
