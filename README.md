@@ -7,7 +7,7 @@ Single page application mode all request will check to see if the requested path
 Otherwise it will serve the default file `index.html`. See the test directory for more advanced examples.
 
 ## API
-Api documentation can be found at [API.md](https://github.com/AlexanderElias/servey/blob/master/API.md)
+Api documentation can be found at [API.md](https://github.com/vokeio/nety/blob/servey-backup/API.md)
 
 ## Features
 - api
