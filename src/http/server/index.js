@@ -189,8 +189,13 @@ class HttpServer {
 
         } catch (error) {
             const message = this.debug ? error.message : undefined;
-            if (typeof error.code !== 'number' || error.code === 500) console.error(error);
             const code = typeof error.code === 'number' ? error.code : 500;
+
+            if (typeof error.code !== 'number' || error.code === 500) {
+                console.error(`${context.method} ${context.url.pathname}`);
+                console.error(error);
+            }
+
             return context.code(code).end(message);
         }
 
