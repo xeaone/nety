@@ -1,5 +1,5 @@
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/vokeio/nety.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/vokeio/nety/alerts/)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/vokeio/nety.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/vokeio/nety/alerts/) 
+[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/vokeio/nety.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/vokeio/nety/context:javascript)
 
 # Nety
 Server module for building API, SPA, and WEB applications. Zero dependencies.
