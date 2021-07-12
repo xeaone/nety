@@ -6,11 +6,11 @@ const MB = 1e6;  // 1mb
 
 module.exports = class Payload {
 
-    constructor(options = {}) {
+    constructor (options = {}) {
         this.maxBytes = options.maxBytes || MB;
     }
 
-    async data(context) {
+    async data (context) {
         return new Promise((resolve, reject) => {
             let chunks = '';
 
@@ -30,7 +30,7 @@ module.exports = class Payload {
         });
     }
 
-    async handle(context) {
+    async handle (context) {
 
         if (context.method !== 'post') return {};
 
@@ -39,13 +39,13 @@ module.exports = class Payload {
         if (data === null) return context.code(413).end();
         if (!data.length) return {};
 
-        const type = context.request.headers['content-type'] || '';
+        const type = context.request.headers[ 'content-type' ] || '';
 
         if (type.includes('application/json')) {
             try { return JSON.parse(data); }
             catch { return context.code(400).end(); }
         } else if (type.includes('application/x-www-form-urlencoded')) {
-            try { return Querystring.parse(data) }
+            try { return Querystring.parse(data); }
             catch { return context.code(400).end(); }
         }
 
@@ -53,4 +53,4 @@ module.exports = class Payload {
         catch { return {}; }
     }
 
-}
+};

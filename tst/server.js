@@ -2,7 +2,8 @@
 
 const Fs = require('fs');
 const Nety = require('../src');
-const { Controller, HttpServer } = Nety;
+const { HttpServer } = Nety;
+// const { Controller, HttpServer } = Nety;
 const { Server, Basic, Cache, Cookie, File, Payload, Normalize, Preflight, Session } = HttpServer;
 
 Promise.resolve().then(async () => {
@@ -28,7 +29,7 @@ Promise.resolve().then(async () => {
     const payload = new Payload();
     const normalize = new Normalize();
     const preflight = new Preflight();
-    const basic = new Basic({ validate, secret });
+    // const basic = new Basic({ validate, secret });
     const session = new Session({ validate });
 
     const server = new Server({
@@ -53,7 +54,7 @@ Promise.resolve().then(async () => {
 
     await server.add([
 
-       `get
+        `get
            localhost
            /test
        `, async context => {
@@ -90,6 +91,6 @@ Promise.resolve().then(async () => {
 
     await server.open();
 
-    console.log(`Host: ${server.host}, Address: ${server.address}, Port: ${server.port}`)
+    console.log(`Host: ${server.host}, Address: ${server.address}, Port: ${server.port}`);
 
 }).catch(console.error);

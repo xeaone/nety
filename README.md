@@ -1,6 +1,8 @@
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/vokeio/nety.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/vokeio/nety/alerts/)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/vokeio/nety.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/vokeio/nety/alerts/) 
 
 # Nety
-Server module for building API, SPA, and WEB applications.
+Server module for building API, SPA, and WEB applications. Zero dependencies.
 
 ## Overview
 Single page application mode all request will check to see if the requested path exists on the file system.

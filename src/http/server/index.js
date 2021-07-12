@@ -1,12 +1,12 @@
 'use strict';
 
 const Os = require('os');
-const Util = require('util');
+// const Util = require('util');
 const Http = require('http');
 const Https = require('https');
 const Http2 = require('http2');
-const Url = require('url').URL;
-const Stream = require('stream');
+// const Url = require('url').URL;
+// const Stream = require('stream');
 
 const Mime = require('../../mime.js');
 const Status = require('../../status.js');
@@ -87,9 +87,9 @@ class HttpServer {
 
     async match (request, response) {
 
-        if (typeof response.method === 'string') response.method = [response.method];
-        if (typeof response.host === 'string') response.host = [response.host];
-        if (typeof response.path === 'string') response.path = [response.path];
+        if (typeof response.method === 'string') response.method = [ response.method ];
+        if (typeof response.host === 'string') response.host = [ response.host ];
+        if (typeof response.path === 'string') response.path = [ response.path ];
 
         if (!response.method.includes('*') && !response.method.includes(request.method)) return false;
         if (!response.host.includes('*') && !response.host.includes(request.host)) return false;
@@ -117,23 +117,23 @@ class HttpServer {
             for (let i = 0; i < compareLength; i++) {
 
                 if (
-                    responseParts[i].startsWith('(') && responseParts[i].endsWith(')') ||
-                    responseParts[i].startsWith('{') && responseParts[i].endsWith('}')
+                    responseParts[ i ].startsWith('(') && responseParts[ i ].endsWith(')') ||
+                    responseParts[ i ].startsWith('{') && responseParts[ i ].endsWith('}')
                 ) {
 
                     if (
-                        responseParts[i] === '(~)' || responseParts[i] === '(*)' ||
-                        responseParts[i] === '{~}' || responseParts[i] === '{*}'
+                        responseParts[ i ] === '(~)' || responseParts[ i ] === '(*)' ||
+                        responseParts[ i ] === '{~}' || responseParts[ i ] === '{*}'
                     ) {
                         return true;
                     } else {
-                        compareParts.push(requestParts[i]);
+                        compareParts.push(requestParts[ i ]);
                     }
 
-                } else if (responseParts[i] !== requestParts[i]) {
+                } else if (responseParts[ i ] !== requestParts[ i ]) {
                     return false;
                 } else {
-                    compareParts.push(responseParts[i]);
+                    compareParts.push(responseParts[ i ]);
                 }
 
             }
@@ -172,7 +172,7 @@ class HttpServer {
             for (const handle of handles) {
                 if (response.finished) {
                     break;
-                } else  {
+                } else {
                     const match = await this.match(
                         { method: context.method, host: context.url.hostname, path: context.url.pathname },
                         { method: handle.method, host: handle.host, path: handle.path }
@@ -198,11 +198,11 @@ class HttpServer {
 
     /**
     * Adds handles to the server.
-    * A single String or multiple Strings must procced an Array, Function, or Object.
+    * A single String or multiple Strings must proceed an Array, Function, or Object.
     * Multiple String arguments are accepted with the delimiter of a space, line break, or comma.
-    * Valid String arguments are HTTP-Methods, Virutal-Hosts, and paths starting with a forward slash.
-    * Dyanmic paths, hosts, and methods are accepted. See the context.match method.
-    * If no String arguments are providied then the following Array, Function, or Object will use the '* * /{*}' pattern.
+    * Valid String arguments are HTTP-Methods, Virtual-Hosts, and paths starting with a forward slash.
+    * Dynamic paths, hosts, and methods are accepted. See the context.match method.
+    * If no String arguments are provided then the following Array, Function, or Object will use the '* * /{*}' pattern.
     * @async
     * @param {String|Array|Function|Object}
     */
@@ -213,7 +213,7 @@ class HttpServer {
         let holder = '';
 
         for (let i = 0; i < length; i++) {
-            const argument = arguments[i];
+            const argument = arguments[ i ];
 
             if (argument instanceof Array) {
                 for (const data of argument) await this.add(holder, data);
@@ -264,7 +264,7 @@ class HttpServer {
                 name = name === 'Function' ? '' : name;
                 name = `${name.charAt(0).toLowerCase()}${name.slice(1)}`;
 
-                this.handles.push({ self, handle, name, method, host, path});
+                this.handles.push({ self, handle, name, method, host, path });
             }
 
         }

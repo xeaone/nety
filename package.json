@@ -1,32 +1,32 @@
 {
-	"name": "nety",
-	"version": "0.3.7",
-	"description": "Nety",
-	"main": "src/index.js",
-	"engines": {
-		"node": ">=7.6.0"
-	},
-	"scripts": {
-		"test": "nodemon --watch src --watch tst tst/server.js"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/vokeio/nety.git"
-	},
-	"keywords": [
-		"static",
-		"single",
-		"page",
-		"application",
-		"http",
-		"server",
-		"dev"
-	],
-	"author": "Alexander Elias",
-	"license": "MPL-2.0",
-	"bugs": {
-		"url": "https://github.com/vokeio/nety/issues"
-	},
-	"homepage": "https://github.com/vokeio/nety#readme",
-	"dependencies": {}
+    "name": "nety",
+    "version": "0.3.8",
+    "description": "Nety",
+    "main": "src/index.js",
+    "engines": {
+        "node": ">=7.6.0"
+    },
+    "scripts": {
+        "test": "nodemon --watch src --watch tst tst/server.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/vokeio/nety.git"
+    },
+    "keywords": [
+        "static",
+        "single",
+        "page",
+        "application",
+        "http",
+        "server",
+        "dev"
+    ],
+    "author": "Alexander Elias",
+    "license": "MPL-2.0",
+    "bugs": {
+        "url": "https://github.com/vokeio/nety/issues"
+    },
+    "homepage": "https://github.com/vokeio/nety#readme",
+    "dependencies": {}
 }

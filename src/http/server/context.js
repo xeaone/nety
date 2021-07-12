@@ -3,7 +3,7 @@
 const Path = require('path');
 const Url = require('url').URL;
 const Stream = require('stream');
-const Querystring = require('querystring');
+// const Querystring = require('querystring');
 
 const Mime = require('../../mime.js');
 const Status = require('../../status.js');
@@ -21,14 +21,14 @@ module.exports = class Context {
         this._body = null;
         this._secure = options.secure || instance.secure;
         this._host = options.host || instance.host || '';
-        this._type = options.type || instance.type || 'default'
+        this._type = options.type || instance.type || 'default';
         this._encoding = options.encoding || instance.encoding || 'utf8';
 
         const headers = Object.freeze({ ...request.headers });
-        const method = (request.headers[':method'] || request.method).toLowerCase();
-        const [ , prefix, path ] = (request.headers[':path'] || request.url).match(/(^\/+)?(.*)/);
-        const scheme = (request.headers[':scheme'] || this._secure ? 'https' : 'http').toLowerCase();
-        const authority = (request.headers[':authority'] || request.headers['host'] || this._host).toLowerCase();
+        const method = (request.headers[ ':method' ] || request.method).toLowerCase();
+        const [ , prefix, path ] = (request.headers[ ':path' ] || request.url).match(/(^\/+)?(.*)/);
+        const scheme = (request.headers[ ':scheme' ] || this._secure ? 'https' : 'http').toLowerCase();
+        const authority = (request.headers[ ':authority' ] || request.headers[ 'host' ] || this._host).toLowerCase();
 
         const url = new Url(`${path}`, `${scheme}://${authority}${prefix || '/'}`);
 
@@ -67,7 +67,7 @@ module.exports = class Context {
 
     type (type) {
         if (type) {
-            const mime = this.mime[type] || this.mime[this._type];
+            const mime = this.mime[ type ] || this.mime[ this._type ];
             this.response.setHeader('content-type', `${mime};charset=${this._encoding}`);
             return this;
         } else {
@@ -109,7 +109,7 @@ module.exports = class Context {
     end (body) {
 
         const code = this.response.statusCode || 200;
-        const message =  this.status[code] || '';
+        const message = this.status[ code ] || '';
         body = body || this._body || message;
 
         if (!this.response.hasHeader('content-type')) {
@@ -117,7 +117,7 @@ module.exports = class Context {
             const extension = Path.extname(path).slice(1);
 
             if (extension) {
-                const mime = this.mime[extension] || this.mime[this._type];
+                const mime = this.mime[ extension ] || this.mime[ this._type ];
                 this.response.setHeader('content-type', `${mime};charset=${this._encoding}`);
             }
 
@@ -130,14 +130,14 @@ module.exports = class Context {
             if (typeof body === 'string' || body instanceof Buffer) {
 
                 if (!this.response.hasHeader('content-type')) {
-                    this.response.setHeader('content-type', `${this.mime[this._type]};charset=${this._encoding}`);
+                    this.response.setHeader('content-type', `${this.mime[ this._type ]};charset=${this._encoding}`);
                 }
 
             } else if (typeof body === 'object') {
                 body = JSON.stringify(body);
 
                 if (!this.response.hasHeader('content-type')) {
-                    this.response.setHeader('content-type', `${this.mime['json']};charset=${this._encoding}`);
+                    this.response.setHeader('content-type', `${this.mime[ 'json' ]};charset=${this._encoding}`);
                 }
 
             }
@@ -149,4 +149,4 @@ module.exports = class Context {
         return new Promise((resolve, reject) => this.response.on('error', reject).end(resolve));
     }
 
-}
+};

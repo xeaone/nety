@@ -1,21 +1,23 @@
 'use strict';
 
-const Os = require('os');
+// const Os = require('os');
 const Zlib = require('zlib');
 const Util = require('util');
 const Stream = require('stream');
 
-const Temporary = Os.tmpdir();
+// const Temporary = Os.tmpdir();
 const Gzip = Util.promisify(Zlib.gzip);
-const Defalte = Util.promisify(Zlib.deflate);
+const Deflate = Util.promisify(Zlib.deflate);
+
+// console.warn('todo: compres specific files');
+// console.warn('todo: cache compressed version');
 
 module.exports = class Compress {
 
-    constructor (options = {}) {
+    buffers = new Map();
+
+    constructor () {
         throw new Error('compress is not ready');
-        console.warn('todo: compres specific files');
-        console.warn('todo: cache compressed version');
-        this.buffers = new Map();
     }
 
     async handle (context) {
@@ -23,7 +25,7 @@ module.exports = class Compress {
 
         // if (context.headers.range) return;
 
-        const encoding = context.headers['accept-encoding'];
+        const encoding = context.headers[ 'accept-encoding' ];
 
         if (!encoding) return;
 
@@ -37,7 +39,7 @@ module.exports = class Compress {
                 // context.head('content-length', '');
                 context.head('content-encoding', 'deflate');
                 // context.head('transfer-encoding', 'deflate');
-                context.body(await Defalte(body));
+                context.body(await Deflate(body));
             } else if (body instanceof Stream) {
                 // context.head('content-length', '');
                 context.head('content-encoding', 'deflate');
@@ -64,4 +66,4 @@ module.exports = class Compress {
 
     }
 
-}
+};
