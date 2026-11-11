@@ -1,0 +1,10 @@
+{
+    "singleQuote": true,
+    "semi": true,
+    "tabWidth": 4,
+    "useTabs": false,
+    "arrowParens": "always",
+    "singleAttributePerLine": true,
+    "bracketSameLine": false,
+    "printWidth": 120
+}

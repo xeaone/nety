@@ -1,12 +1,5 @@
-'use strict';
-
-// const Fs = require('fs');
-// const Url = require('url');
-// const Util = require('util');
-// const Path = require('path');
-// const Toked = require('toked');
-// const Jwt = require('jsonwebtoken');
-const Servey = require('../src/server');
+import Nety from '../dist/index.js';
+const Servey = Nety.HttpServer;
 
 // const JwtSign = Util.promisify(Jwt.sign);
 
@@ -16,17 +9,16 @@ const PASSWORD = 't';
 const SECRET = 'secret';
 
 (async function () {
-
     const routes = [
         {
             path: '/payload',
             method: 'post',
             options: {
-                auth: false
+                auth: false,
             },
             handler: async function (context) {
                 console.log(context.payload);
-            }
+            },
         },
         // {
         //     path: '/toked',
@@ -61,14 +53,14 @@ const SECRET = 'secret';
                         } else {
                             return { valid: false };
                         }
-                    }
-                }
+                    },
+                },
             },
             handler: async function (context) {
                 return {
-                    body: context.credential
+                    body: context.credential,
                 };
-            }
+            },
         },
         {
             path: '/basic',
@@ -82,23 +74,22 @@ const SECRET = 'secret';
                         } else {
                             return { valid: false };
                         }
-                    }
-                }
+                    },
+                },
             },
             handler: async function () {
                 return {
-                    body: 'basic'
+                    body: 'basic',
                 };
-            }
+            },
         },
         {
             path: '/sign-in',
-            method: [ 'get','post' ],
+            method: ['get', 'post'],
             handler: async function (context) {
                 const head = {};
 
                 if (context.method === 'POST') {
-
                     if (context.payload.username !== USERNAME || context.payload.password !== PASSWORD) {
                         return context.tool.status.unauthorized();
                     }
@@ -111,8 +102,8 @@ const SECRET = 'secret';
                     return {
                         body: {
                             cookie: cookie,
-                            payload: context.payload
-                        }
+                            payload: context.payload,
+                        },
                     };
                 }
 
@@ -129,24 +120,24 @@ const SECRET = 'secret';
 							<input name="type" type="radio" value="toked" required>Toked<br>
 							<input type="submit" value="Send"/>
 						</form>
-					`
+					`,
                 };
-            }
+            },
         },
         {
-            path:'/(*)',
+            path: '/(*)',
             method: 'get',
             options: {
-                vhost: [ 'localhost:8080', 'testcom.localhost:8080' ]
+                vhost: ['localhost:8080', 'testcom.localhost:8080'],
             },
-            async handler (context) {
+            async handler(context) {
                 return context.tool.static({
                     spa: true,
                     folder: './tst/static',
-                    path: context.url.pathname
+                    path: context.url.pathname,
                 });
-            }
-        }
+            },
+        },
     ];
 
     const server = new Servey({
@@ -162,23 +153,23 @@ const SECRET = 'secret';
         // tool: {
         options: {
             cookie: {
-                secret: SECRET
+                secret: SECRET,
             },
             cache: {
-                control: true
-            }
+                control: true,
+            },
         },
         routes: routes,
         event: {
             handler: {
-                before () {
+                before() {
                     // console.log('before');
                 },
-                after () {
+                after() {
                     // console.log('after');
-                }
-            }
-        }
+                },
+            },
+        },
         // auth: {
         // 	type: 'basic',
         // 	type: 'basic',
@@ -213,8 +204,7 @@ const SECRET = 'secret';
     await server.open();
 
     console.log(server.port);
-
-}()).catch(function (error) {
+})().catch(function (error) {
     console.log('here');
     console.error(error);
 });

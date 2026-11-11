@@ -1,20 +1,29 @@
-'use strict';
-
 // preflight CORS CORBS
 
-module.exports = class Preflight {
+import type Context from '../context.js';
 
-    constructor (options = {}) {
-        this.origin = options.origin
-        this.age = options.age || 31536000;
-        this.credentials = options.credentials || 'true';
-        this.expose = options.expose || 'WWW-Authenticate, Server-Authorization';
-        this.headers = options.headers || 'Content-Type, Authorization, X-Frame-Options';
-        this.methods = options.methods || 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD';
+export interface PreflightOptions {
+    origin?: string;
+    age?: number;
+    credentials?: string;
+    expose?: string;
+    headers?: string;
+    methods?: string;
+}
+
+export default class Preflight {
+    origin: string | undefined = undefined;
+    age = 31536000;
+    credentials = 'true';
+    expose = 'WWW-Authenticate, Server-Authorization';
+    headers = 'Content-Type, Authorization, X-Frame-Options';
+    methods = 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD';
+
+    constructor(options: PreflightOptions = {}) {
+        Object.assign(this, options);
     }
 
-    async handle (context) {
-
+    async handle(context: Context) {
         context.head('access-control-max-age', this.age);
         context.head('access-control-expose-headers', this.expose);
         context.head('access-control-allow-headers', this.headers);
@@ -29,5 +38,4 @@ module.exports = class Preflight {
 
         await context.code(204).end();
     }
-
 }

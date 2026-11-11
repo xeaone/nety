@@ -1,5 +1,5 @@
-const fs = require('fs');
-const status = require('../src/status.js');
+import fs from 'node:fs';
+import status from '../dist/status.js';
 
 const classes = [];
 const names = [];
@@ -7,7 +7,7 @@ for (const key in status) {
     const value = status[key];
     const name = value
         .toLowerCase()
-        .replace(/^(\w)|(\s+|-)(\w)/g, c => c.toUpperCase())
+        .replace(/^(\w)|(\s+|-)(\w)/g, (c) => c.toUpperCase())
         .replace(/\s|-|'/g, '');
 
     names.push(`\t${name},\n`);
@@ -16,17 +16,16 @@ for (const key in status) {
 class ${name} extends Error {
     code = ${Number(key)}
     message = "${value}"
-    constructor (message) { super(message); this.message = message || this.message; }
+    constructor (message?: string) { super(message); this.message = message || this.message; }
 }
 `);
-
 }
 
 const file = `
 ${classes.join('')}
-module.exports = {
+export default {
 ${names.join('')}
 }
 `;
 
-fs.writeFileSync('src/error.js', file);
+fs.writeFileSync('src/error.ts', file);

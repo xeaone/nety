@@ -1,11 +1,8 @@
-'use strict';
+import { URL as Url } from 'node:url';
+import type Context from '../context.js';
 
-const Url = require('url').URL;
-
-module.exports = class Normalize {
-
-    async handle (context) {
-
+export default class Normalize {
+    async handle(context: Context) {
         let redirect = false;
         const location = new Url(context.url.href);
 
@@ -16,7 +13,7 @@ module.exports = class Normalize {
 
         if (location.pathname.includes('//')) {
             redirect = true;
-            location.pathname = location.pathname.replace(/\/+/g,'/');
+            location.pathname = location.pathname.replace(/\/+/g, '/');
         }
 
         if (location.pathname !== '/' && location.pathname.endsWith('/')) {
@@ -27,7 +24,5 @@ module.exports = class Normalize {
         if (redirect) {
             await context.code(301).head('location', location.href).end();
         }
-
     }
-
 }
