@@ -29,13 +29,13 @@ const session = new Session({ validate });
 
 const server = new HttpServer({
     port: 8080,
-    version: 2,
+    // version: 2,
     debug: true,
     host: 'localhost',
-    secure: {
-        cert: Fs.readFileSync(fileURLToPath(new URL('../localhost-cert.pem', import.meta.url))),
-        key: Fs.readFileSync(fileURLToPath(new URL('../localhost-privkey.pem', import.meta.url))),
-    },
+    // secure: {
+    //     cert: Fs.readFileSync(fileURLToPath(new URL('../localhost-cert.pem', import.meta.url))),
+    //     key: Fs.readFileSync(fileURLToPath(new URL('../localhost-privkey.pem', import.meta.url))),
+    // },
 });
 
 server.add(session);

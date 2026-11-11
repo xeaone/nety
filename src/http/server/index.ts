@@ -10,7 +10,26 @@ import Methods from '../../methods.js';
 
 import Context from './context.js';
 
-import type { Condition, Handle, HttpServerOptions, RegisteredHandle, Request, Response } from './types.js';
+import type { Condition, Handle, RegisteredHandle, Request, Response } from './types.js';
+
+export interface HttpServerOptions {
+    port?: number;
+    debug?: boolean;
+    host?: string;
+    address?: string;
+    type?: string;
+    encoding?: BufferEncoding;
+    server?: Record<string, unknown>;
+    version?: 1 | 2;
+    handles?: RegisteredHandle[];
+    secure?: boolean | Record<string, unknown>;
+    end?: boolean;
+    xss?: string;
+    xframe?: string;
+    xcontent?: string;
+    xdownload?: string;
+    hsts?: string;
+}
 
 /**
  * Class for an Http Server.

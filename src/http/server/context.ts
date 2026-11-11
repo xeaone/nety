@@ -4,7 +4,22 @@ import { Readable, Writable } from 'node:stream';
 
 import Mime from '../../mime.js';
 import Status from '../../status.js';
-import type { ContextOptions, ResponseBody, Request, Response } from './types.js';
+import type { ResponseBody, Request, Response } from './types.js';
+
+export interface ContextOptions {
+    request: Request;
+    response: Response;
+    instance: {
+        secure: boolean | object;
+        host: string;
+        type?: string;
+        encoding?: BufferEncoding;
+    };
+    secure?: boolean;
+    host?: string;
+    type?: string;
+    encoding?: BufferEncoding;
+}
 
 const headerValue = (value: string | string[] | undefined): string | undefined =>
     Array.isArray(value) ? value[0] : value;

@@ -10,42 +10,6 @@ export type HeaderValue = string | number | readonly string[];
 
 export type ResponseBody = string | Buffer | Readable | object;
 
-export interface ContextOwner {
-    secure: boolean | object;
-    host: string;
-    type?: string;
-    encoding?: BufferEncoding;
-}
-
-export interface ContextOptions {
-    request: Request;
-    response: Response;
-    instance: ContextOwner;
-    secure?: boolean;
-    host?: string;
-    type?: string;
-    encoding?: BufferEncoding;
-}
-
-export interface HttpServerOptions {
-    port?: number;
-    debug?: boolean;
-    host?: string;
-    address?: string;
-    type?: string;
-    encoding?: BufferEncoding;
-    server?: Record<string, unknown>;
-    version?: 1 | 2;
-    handles?: RegisteredHandle[];
-    secure?: boolean | Record<string, unknown>;
-    end?: boolean;
-    xss?: string;
-    xframe?: string;
-    xcontent?: string;
-    xdownload?: string;
-    hsts?: string;
-}
-
 export interface ValidationResult {
     valid?: boolean;
     forbidden?: boolean;

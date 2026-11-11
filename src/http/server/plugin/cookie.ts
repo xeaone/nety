@@ -14,19 +14,20 @@ export interface CookieOptions {
 export default class Cookie {
     path = '';
     domain = '';
-    // Number of seconds until the cookie expires.
-    maxAge = '';
-    expires = '';
     secure = true;
     httpOnly = true;
     sameSite = 'Strict';
 
+    // Number of seconds until the cookie expires.
+    // A zero or negative number will expire the cookie immediately.
+    // If both (Expires and Max-Age) are set, Max-Age will have precedence.
+    maxAge = '';
+
+    // <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
+    expires = '';
+
     constructor(options: CookieOptions = {}) {
         Object.assign(this, options);
-
-        // A zero or negative number will expire the cookie immediately.
-        // If both (Expires and Max-Age) are set, Max-Age will have precedence.
-        // <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT
     }
 
     add(context: Context, name: string, value: string): void {

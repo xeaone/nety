@@ -1,6 +1,7 @@
 import { statSync, createReadStream } from 'node:fs';
 import { resolve, join, normalize, extname } from 'node:path';
 import type { Stats } from 'node:fs';
+import type { Handle, HandleFunction, HandleInterface } from '../types.js';
 
 import type Context from '../context.js';
 
@@ -35,6 +36,16 @@ export default class File {
         // this.reserved = /^\.+$/;
         // this.windowsReserved = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
         // this.windowsTrailing = /[\. ]+$/;
+    }
+
+    valid(data: string): boolean {
+        const parts = data.split('/');
+        for (const part of parts) {
+            if (Buffer.byteLength(part) >= 255) {
+                return false;
+            }
+        }
+        return true;
     }
 
     range(range: string, size: number): { size: number; start: number; end: number } {
@@ -85,16 +96,6 @@ export default class File {
             context.head('content-length', stat.size);
             context.body(createReadStream(path));
         }
-    }
-
-    valid(data: string): boolean {
-        const parts = data.split('/');
-        for (const part of parts) {
-            if (Buffer.byteLength(part) >= 255) {
-                return false;
-            }
-        }
-        return true;
     }
 
     method(context: Context, options: FileRequestOptions = {}) {
